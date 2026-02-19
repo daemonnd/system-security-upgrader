@@ -1,0 +1,17 @@
+[Unit]
+Description=Run post-upgrade security checks
+After=network-online.target
+Wants=network-online.target
+ConditionPathExists=/var/lib/system-security-upgrader/pending-check
+
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/security-check
+User=root
+Group=root
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
+
