@@ -222,3 +222,5 @@ Here is a concise, README-ready summary of the **system-security-upgrader** proj
 
 # TODO
 - add `architecture/` dir with full architecture docs
+- add ai summarizer daemon to trigger the ai-summarizer.sh script
+- make a real test (upgrade -> reboot -> security-upgrader.service -> security-check.sh -> ai start daemon -> ai-summarizer.sh)
