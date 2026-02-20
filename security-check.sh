@@ -16,6 +16,15 @@ function init {
         echo "Permission Error: This script needs root privileges or sudo." # logging does not work at this point
         exit 1
     fi
+
+    # check if the content of the triggerfile is valid
+    user="$(cat /var/lib/system-security-upgrader/pending-check)"
+    if [[ -d "/home/${user}" ]]; then
+        echo "Trigger file contains a valid username where the user have a home dir: ${user@Q}"
+    else
+        echo "None or invalid username in security-upgrader.service trigger file: '/var/lib/system-security-upgrader/pending-check': $(cat /var/lib/system-security-upgrader/pending-check)"
+        exit 1
+    fi
     
     # create logfile path pattern
     logpattern=$(date "+%Y-%m-%d_%H-%M-%S")
@@ -66,6 +75,23 @@ function run_rkhunter {
     run_cmd "Running rkhunter with warnings only" "$rkhunter_warnings_logfile" rkhunter --check --sk --nocolors --rwo 
     
 }
+function end_script {
+    echo "All the security checks have been performed. It took $SECONDS seconds."
+    rm -f /var/lib/system-security-upgrader/pending-check # remove file that triggers the security check
+    echo "The 'security-upgrader.service' daemon has been disabled by removing the condition path '/var/lib/system-security-upgrader/pending-check'."
+
+    # change the owner of the logfiles to the $user
+    chown "$user":"$user" "$logdir"*
+    chown "$user":"$user" "$logdir"
+    # creating the trigger file for the ai summarization daemon
+    echo "$user" > /var/lib/system-security-upgrader/pending-ai-summary
+    echo "$logdir" >> /var/lib/system-security-upgrader/pending-ai-summary
+    # change the user to the owner of the trigger file to avoid permission errors
+    chown "$user":"$user" /var/lib/system-security-upgrader/pending-ai-summary
+
+
+    echo "All the logs have been written to ${logdir@Q}"
+}
 
 function main {
     init
@@ -77,12 +103,8 @@ function main {
 
     wait "$lynis_pid" "$rkhunter_pid"
 
+    end_script
 
-    echo "All the security checks have been performed. It took $SECONDS seconds."
-    rm -f /var/lib/system-security-upgrader/pending-check # remove file that triggers the security check
-    echo "The 'security-upgrader.service' daemon has been disabled by removing the condition path '/var/lib/system-security-upgrader/pending-check'."
-
-    echo "All the logs have been written to ${logdir@Q}"
     exit 0
 }
 

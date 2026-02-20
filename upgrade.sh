@@ -16,6 +16,18 @@ function init {
         echo "Permission Error: This script needs root privileges or sudo." # logging does not work at this point
         exit 1
     fi
+
+    # get the user that should own the ai summary
+    # getting the user who executed the script
+    user="${1:-$SUDO_USER}"
+    # check if the user have a home dir for config
+    if [[ -d "/home/${user}" ]]; then
+        echo "The user ${user@Q} has a home dir."
+    else
+        echo "The user ${user@Q} does not have a home dir."
+        echo "Please restart the script by substituting the user with 'su <username>' or append the username as first argument."
+        exit 1
+    fi  
     
     # create logfile path pattern
     logpattern=$(date "+%Y-%m-%d_%H-%M-%S")
@@ -65,7 +77,7 @@ function end_script {
             touch /var/lib/system-security-upgrader/pending-check # touch file so that the service knows when to run
             reboot
         elif [[ "${answer,}" == "n" ]]; then
-            touch /var/lib/system-security-upgrader/pending-check # touch file so that the service knows when to run
+            echo "$user" > /var/lib/system-security-upgrader/pending-check # create the file with the user in it so that the service knows when to run and knows the right user
             echo "After the next reboot, the security of the system will be checked."
             exit 0
         else
@@ -75,7 +87,7 @@ function end_script {
 }
 function main {
     # init the script
-    init
+    init "$@"
 
     # update the mirrorlists
     update_mirrorlists
