@@ -31,8 +31,7 @@ function filter {
 function run_ai {
     # tool: $1
     local tool="$1"
-
-    fabric -sp "system_security_upgrader_$1" -o "/home/${user}/Documents/${tool}.md"
+    filter "${log_dir}${tool}.log"  | fabric -sp "system_security_upgrader_$1" -o "/home/${user}/Documents/${tool}.md"
 }
 function main {
     check_args "$@"
