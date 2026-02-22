@@ -59,21 +59,18 @@ function run_ai {
     echo "# $tool" >> "$summaryfile"
     echo >> "$summaryfile"
 
-    filter "${logdir}${tool}.log"  | fabric -sp "system_security_upgrader_$1" >> "$summaryfile"
+    filter "${logdir}${tool}.log"  | "/home/${user}/.local/bin/fabric" -sp "system_security_upgrader_$1" >> "$summaryfile"
     echo "Running local ai against the logs of ${tool}... Done"
 }
 function main {
     init "$@"
-    run_ai "lynis" &
-    lynis_ai_pid="$!"
-    run_ai "rkhunter" &
-    rkhunter_ai_pid="$!"
+    run_ai "lynis" 
+    run_ai "rkhunter" 
 
-    wait "$lynis_ai_pid" "$rkhunter_ai_pid"
     
     echo "The summary have been saved at"
     echo "$summaryfile"
-    rm "/var/lib/system-security-upgrader/pending-ai-summary"
+    rm -f "/var/lib/system-security-upgrader/pending-ai-summary"
     echo "The trigger file for the ai summary has been removed successfully."
     # DEBUG
     echo "USER: $user"

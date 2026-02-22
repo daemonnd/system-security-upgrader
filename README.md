@@ -2,6 +2,8 @@
  Automated (or semi-automated) Arch Linux system upgrade followed by security auditing, with clear separation of concerns, reliable hand-off points, and future offline AI summarization support.
  It should be a multi-user system tool
 
+# Is this right for you?
+
 # Motivations
 - learn systemd and daemons better
 - automate security checks and upgrade
@@ -50,10 +52,9 @@ Deployment path:
 What it does:
 1. Check if root is running it
 2. Save the `$SUDO_USER` for later
-3. Check if the internet works
-4. run reflector to get the latest mirrorlists and perform the upgrade faster
-5. upgrade the system
-6. if the upgrade finished without errors, ask user via read  to reboot now and then reboot, if not, the script exits with exit code 0 and on the next reboot the security checks will be performed.
+3. run reflector to get the latest mirrorlists and perform the upgrade faster
+4. upgrade the system
+5. if the upgrade finished without errors, ask user via read  to reboot now and then reboot, if not, the script exits with exit code 0 and on the next reboot the security checks will be performed.
 
 # Phase 2: security check
 This script is there to run security tools, write security logs which will be analyzed later by local ai.
@@ -177,6 +178,7 @@ The logs of the tools (reflector, pacman, systemd, ...) are written in their own
 3. Run `sudo security-check` in the terminal to perform the security checks.
 
 # Future improvements
+- country selection for reflector
 - email notifications
 - dry-run mode
 - add non-interactive mode
@@ -190,6 +192,7 @@ The logs of the tools (reflector, pacman, systemd, ...) are written in their own
 - send message to user (telegram or email) with the ai summary
 - only make ONE logdir for both upgrade and security checks
 - add json config
+- add log cleanup
 # Author Info
 - username: daemonnd
 - email: find at github profile
@@ -228,3 +231,4 @@ Here is a concise, README-ready summary of the **system-security-upgrader** proj
 - make it work when using it with reboot and `sudo upgrade`
 - check in `ai-summarizer.sh` if the prompts are there
 - make summary for each tool, summary.md itself should be the summary of those.
+- fix the bug that the handoff file for running the ai summarizer does not work

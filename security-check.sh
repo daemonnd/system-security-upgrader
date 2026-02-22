@@ -90,7 +90,7 @@ function run_rkhunter {
 }
 function end_script {
     echo "All the security checks have been performed. It took $SECONDS seconds."
-    #rm -f /var/lib/system-security-upgrader/pending-check # remove file that triggers the security check # TODO: Uncomment this line after testing
+    rm -f /var/lib/system-security-upgrader/pending-check # remove file that triggers the security check # TODO: Uncomment this line after testing
     echo "The 'security-upgrader.service' daemon has been disabled by removing the condition path '/var/lib/system-security-upgrader/pending-check'."
 
     # change the owner of the logfiles to the $user
@@ -104,6 +104,8 @@ $logpattern
 EOF
     # change the user to the owner of the trigger file to avoid permission errors
     chown "$user":"$user" /var/lib/system-security-upgrader/pending-ai-summary
+    chmod 755 /var/lib/system-security-upgrader/
+    chmod 755 /var/lib/system-security-upgrader/pending-ai-summary
 
 
     echo "All the logs have been written to ${logdir@Q}"
