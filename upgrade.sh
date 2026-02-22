@@ -19,7 +19,7 @@ function init {
 
     # get the user that should own the ai summary
     # getting the user who executed the script
-    user="${1:-$SUDO_USER}"
+    user="$SUDO_USER"
     # check if the user have a home dir for config
     if [[ -d "/home/${user}" ]]; then
         echo "The user ${user@Q} has a home dir."
@@ -74,9 +74,10 @@ function end_script {
     while true; do
         read -p "Upgrade successful. Reboot now? (y/n) " answer
         if [[ "${answer,}" == "y" ]]; then
-            touch /var/lib/system-security-upgrader/pending-check # touch file so that the service knows when to run
+            echo "$user" > /var/lib/system-security-upgrader/pending-check # touch file so that the service knows when to run
             reboot
         elif [[ "${answer,}" == "n" ]]; then
+            echo "USER: $user"
             echo "$user" > /var/lib/system-security-upgrader/pending-check # create the file with the user in it so that the service knows when to run and knows the right user
             echo "After the next reboot, the security of the system will be checked."
             exit 0

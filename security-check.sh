@@ -17,14 +17,22 @@ function init {
         exit 1
     fi
 
+    # check if the trigger file exists
+    if [[ ! -r /var/lib/system-security-upgrader/pending-check ]]; then
+        echo "Trigger file at '/var/lib/system-security-upgrader/pending-check' does not exist, therefore this script can't be executed properly."
+        exit 1
+    fi
     # check if the content of the triggerfile is valid
     user="$(cat /var/lib/system-security-upgrader/pending-check)"
     if [[ -d "/home/${user}" ]]; then
         echo "Trigger file contains a valid username where the user have a home dir: ${user@Q}"
     else
-        echo "None or invalid username in security-upgrader.service trigger file: '/var/lib/system-security-upgrader/pending-check': $(cat /var/lib/system-security-upgrader/pending-check)"
+        echo "Invalid username in security-upgrader.service trigger file: '/var/lib/system-security-upgrader/pending-check': $(cat /var/lib/system-security-upgrader/pending-check)"
         exit 1
     fi
+
+    # DEBUG
+    echo "User: $user"
     
     # create logfile path pattern
     logpattern=$(date "+%Y-%m-%d_%H-%M-%S")
@@ -35,6 +43,11 @@ function init {
     # create neccessary dirs
     mkdir -p /var/log/system-security-upgrader/
     mkdir "/var/log/system-security-upgrader/${logpattern}_security-check"
+    mkdir -p "/var/lib/system-security-upgrader/summaries"
+    mkdir -p "/var/lib/system-security-upgrader/summaries/${user}"
+    chown "$user":"$user" "/var/lib/system-security-upgrader/summaries/"
+    chown "$user":"$user" "/var/lib/system-security-upgrader/summaries/${user}"
+
 
     echo "Executing upgrade script as root..."
 }
@@ -71,28 +84,32 @@ function run_rkhunter {
     run_cmd "Updating rkhunter file prosperties" "$rkhunter_propupd_logfile" rkhunter --propupd --logfile "$rkhunter_propupd_logfile"
 
     # run rkhunter with warnings only
-    local rkhunter_warnings_logfile="${logdir}rkhunter_warnings.log"
-    run_cmd "Running rkhunter with warnings only" "$rkhunter_warnings_logfile" rkhunter --check --sk --nocolors --rwo 
+    local rkhunter_logfile="${logdir}rkhunter.log"
+    run_cmd "Running rkhunter with warnings only" "$rkhunter_logfile" rkhunter --check --sk --nocolors --rwo 
     
 }
 function end_script {
     echo "All the security checks have been performed. It took $SECONDS seconds."
-    rm -f /var/lib/system-security-upgrader/pending-check # remove file that triggers the security check
+    #rm -f /var/lib/system-security-upgrader/pending-check # remove file that triggers the security check # TODO: Uncomment this line after testing
     echo "The 'security-upgrader.service' daemon has been disabled by removing the condition path '/var/lib/system-security-upgrader/pending-check'."
 
     # change the owner of the logfiles to the $user
     chown "$user":"$user" "$logdir"*
     chown "$user":"$user" "$logdir"
     # creating the trigger file for the ai summarization daemon
-    echo "$user" > /var/lib/system-security-upgrader/pending-ai-summary
-    echo "$logdir" >> /var/lib/system-security-upgrader/pending-ai-summary
+    cat <<EOF > /var/lib/system-security-upgrader/pending-ai-summary
+$user
+$logdir
+$logpattern
+EOF
     # change the user to the owner of the trigger file to avoid permission errors
     chown "$user":"$user" /var/lib/system-security-upgrader/pending-ai-summary
 
 
     echo "All the logs have been written to ${logdir@Q}"
+    # DEBUG
+    echo "USER: $user"
 }
-
 function main {
     init
     echo "Executing security check script..."

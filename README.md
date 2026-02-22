@@ -87,8 +87,8 @@ Inside the logfile, the timestamps are just after it actually happened.
 Deployment path:
 `/usr/local/bin/security_upgrader_ai-summarizer`
 
-Daemon path:
-`/etc/systemd/system/`
+Daemon path (another service)
+`/etc/systemd/system/security-summarizer.service`
 
 Condition path containing the username (captured in phase 1) and log dir of phase2:
 `/var/lib/system-security-upgrader/pending-ai-summary`
@@ -169,6 +169,7 @@ The logs of the tools (reflector, pacman, systemd, ...) are written in their own
 - Permission denied: use sudo for upgrade script and check the file permissions that should be 755.
 - Command not found: check `$PATH` and shebang in the scripts
 - AI summary fails: check model availability, test the model manually
+- User not found: re-run `install.sh`, if it is still not working: run `sudo upgrade <username>` to set it manually
 
 ## Test without reboot:
 1. Run upgrade script (`upgrade`)
@@ -224,3 +225,6 @@ Here is a concise, README-ready summary of the **system-security-upgrader** proj
 - add `architecture/` dir with full architecture docs
 - add ai summarizer daemon to trigger the ai-summarizer.sh script
 - make a real test (upgrade -> reboot -> security-upgrader.service -> security-check.sh -> ai start daemon -> ai-summarizer.sh)
+- make it work when using it with reboot and `sudo upgrade`
+- check in `ai-summarizer.sh` if the prompts are there
+- make summary for each tool, summary.md itself should be the summary of those.
