@@ -44,10 +44,8 @@ The ownership of all the output files are marked as owned by the user that will 
 
 ## What It Doesn't Do
 
-I have no idea
-- [Specific thing it doesn't do] — [Why is that important to call out?]
-- [Another scope boundary] — [What problem would it cause if it did this?]
-- [Third thing] — [What would be too complex?]
+- It does not fix the security issues automatically, because this choice and action is for admins
+- It does not alert the user when it is don, because this is user choice and it has still to be summarized
 
 ---
 

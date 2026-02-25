@@ -25,7 +25,7 @@ function init {
         echo "The user ${user@Q} has a home dir."
     else
         echo "The user ${user@Q} does not have a home dir."
-        echo "Please restart the script by substituting the user with 'su <username>' or append the username as first argument."
+        echo "Please restart the script by substituting the user with 'su <username>' or running `install.sh` as a valid user with a homedir."
         exit 1
     fi  
     

@@ -232,3 +232,4 @@ Here is a concise, README-ready summary of the **system-security-upgrader** proj
 - check in `ai-summarizer.sh` if the prompts are there
 - make summary for each tool, summary.md itself should be the summary of those.
 - fix the bug that the handoff file for running the ai summarizer does not work
+- make the main function in `ai-summarizer.sh` run as user, the unit as root or drop the permissions for the ai tool fabric

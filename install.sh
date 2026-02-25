@@ -40,6 +40,7 @@ ConditionPathExists=/var/lib/system-security-upgrader/pending-ai-summary
 [Service]
 Type=oneshot
 ExecStart=/usr/local/bin/security_upgrader_ai-summarizer
+ExecStartPost=+/usr/bin/rm -f /var/lib/system-security-upgrader/pending-ai-summary
 User=${user}
 Group=${user}
 

@@ -6,7 +6,6 @@
 **Duration:** Depends on non-uniq logsize and mainly on the ai model. When using a decent model (ollama) on decent hardware: ~20-25min.
 **Input:** A valid triggerfile at `/var/lib/system-security-upgrader/pending-ai-summary` containing a valid username, logdir and timestamp, have to be owned by the user, not root, logfiles from the security tools at `/var/log/system-security-upgrader/YYYY-mm-dd_HH-MM-SS_security-check/tool.log`
 **Output:** Ai summary of the logs, at `/var/lib/system-security-upgrader/summaries/<username>/YYYY-mm-dd_HH-MM-SS_ai-summary.md`
-[What file is created? Where? What's in it? Who owns it? What format? Example: "Creates markdown summary at /path/summaries/USERNAME/TIMESTAMP_summary.md (owner: USERNAME, human-readable findings)"]
 **Files:** `security-summarizer.service`, `ai-summarizer.sh`
 
 ---

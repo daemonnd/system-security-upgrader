@@ -64,19 +64,14 @@ function run_ai {
 }
 function main {
     init "$@"
-    run_ai "lynis" 
-    run_ai "rkhunter" 
+    #run_ai "lynis" 
+    #run_ai "rkhunter" 
 
     
     echo "The summary have been saved at"
     echo "$summaryfile"
-    rm -f "/var/lib/system-security-upgrader/pending-ai-summary"
-    echo "The trigger file for the ai summary has been removed successfully."
     # DEBUG
     echo "USER: $user"
-    ls "/var/lib/system-security-upgrader/"
-    ls "/var/lib/system-security-upgrader/summaries/"
-    ls "/var/lib/system-security-upgrader/summaries/user/"
 
 }
 
