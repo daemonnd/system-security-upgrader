@@ -64,8 +64,8 @@ function run_ai {
 }
 function main {
     init "$@"
-    #run_ai "lynis" 
-    #run_ai "rkhunter" 
+    run_ai "lynis" 
+    run_ai "rkhunter" 
 
     
     echo "The summary have been saved at"
