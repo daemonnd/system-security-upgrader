@@ -1,72 +1,60 @@
 ## Execution Flow
+sudo upgrade
+set up strict mode (Eeuo pipefail) and trapp ERR
 
-**What goes here:**
-Document the **actual step-by-step execution** of the script. Not pseudocode, but the real control flow. Include both success and failure paths. Show where functions call each other, where it exits, where it loops. This is "if I trace through the code with a debugger, what happens?"
+### init()
 
-**Why it matters:** Someone debugging needs to understand: "At what point does it fail? What state exists when it fails?"
+check if root is running the script
+	|-> if no: output error, exit the script
+	|-> if yes: continue
+check if the $SUDO_USER has a home dir
+	|-> if no: output error, exit the script
+	|-> if yes: continue and save the username
+create logpattern and logdir based on the current time and date
+create the logdir and its parent dir (if nonexistent)
+create a dir for holding the ai summaries and trigger/handoff files
 
-**Example from unrelated project (Kubernetes controller):**
-```
-controller starts
-  ↓
-watch for ConfigMap changes
-  ├─ If ConfigMap invalid → log error, continue watching
-  ├─ If ConfigMap valid → trigger reconciliation
-  └─ If watch connection lost → reconnect (exponential backoff)
-  ↓
-reconcile() called
-  ├─ Get current state from API
-  ├─ Compare desired vs actual
-  ├─ If differ → apply patch
-  │   ├─ If patch succeeds → update status
-  │   ├─ If patch fails → retry 3x, then backoff
-  │   └─ If all retries fail → mark as error, continue
-  └─ If match → do nothing
-```
+### update_mirrorlists()
+generate reflector logfile path (based on logdir)
+run_cmd with the description (Updating the mirrorlists) logfile and reflector command (reflector --latest 20 --country Germany,Netherlands,Belgium  --sort rate --save /etc/pacman.d/mirrorlist ):
 
-**Your task:** Trace through `upgrade.sh` and show:
-- Each function call in order
-- What happens if it succeeds
-- What happens if it fails (which functions skip, which exit)
-- Where the user makes decisions (reboot prompt)
-- What state exists at each point
+### run_cmd()
+save logfile & description as local vars
+execute the command given
+	|-> on failure: capture exit code, output error and exit with the same exit code than the program that failed
+	|-> on success: output that the command ran is done
+
+### upgrade_system()
+generate pacman logfile path (based on logdir)
+run_cmd with the description (Upgrading the system) logfile of pacman, and pacman command (pacman -Syu) 
+
+outputting the time (how many seconds the script took)
+outputting the path of the logdir to check logs
+
+### end_script()
+ask the user wether to reboot now or run phase 2 on the next reboot
+	|-> if y (yes): create trigger file for phase to (pending-check) with the username as content, and reboot, therefore the script will exit with 0
+	|-> if n (no): create trigger file for phase 2 (pending-check) with the username as content, output that the security tools will run on next boot, the script exits with 0
+	|-> if invalid input: present options to the user (y/n) and re-prompt
+
+
 
 ---
 
 ## State Created
+### Timeline:
+1.  (init): Creates /var/log/system-security-upgrader/ (owner: root, does not get deleted)
+2. (init): Creates /var/log/system-security-upgrader/YYYY-mm-dd_HH-MM-SS_upgrade/ (owner: root, does not get deleted)
+3.  (init): Creates /var/lib/system-security-upgrader/ (owner: root, does not get deleted)
+4.  (update_mirrorlists -> run_cmd) /var/log/system-security-upgrader/YYYY-mm-dd_HH-MM-SS_upgrade/reflector.log (owner: root, does not get deleted)
+5.  (upgrade_system -> run_cmd) /var/log/system-security-upgrader/YYYY-mm-dd_HH-MM-SS_upgrade/pacman.log (owner: root, does not get deleted)
+6.  (end_script) /var/lib/system-security-upgrader/pending-check (owner: root, does get deleted after the `security-check.sh` script ran)
 
-**What goes here:**
-Show two things: (1) **Timeline** — when each file/directory is created, by which function, (2) **Final tree** — what the directory structure looks like after the script finishes.
-
-**Why it matters:** Understanding when files are created helps with debugging. "Did this file get created? When? By which step?" If something goes wrong at step 5, what should exist at that point?
-
-**Example from unrelated project (CI/CD pipeline):**
-```
-Timeline:
-├─ Step 1 (checkout): Creates /workspace/repo/ (owner: ci-user)
-├─ Step 2 (build): Creates /workspace/build/ (owner: ci-user)
-│   └─ /workspace/build/artifacts/ (owner: ci-user)
-├─ Step 3 (test): Creates /workspace/test-results/ (owner: ci-user)
-│   └─ If test fails → file exists but marked FAILED
-└─ Step 4 (publish): Creates /repo/releases/v1.0/ (owner: release-user)
-    └─ If publish fails → directory doesn't exist yet
-
-Final directory tree (on success):
-/workspace/
-├── repo/
-├── build/
-│   └── artifacts/
-└── test-results/
-/repo/
-└── releases/
-    └── v1.0/
-```
-
-**Your task:** Show:
-- **Timeline:** Which function creates which file? In what order?
-- **Final tree:** All directories + log files created by `upgrade.sh`
-- **Ownership:** Who owns each file at creation? Any ownership changes?
-- **Lifetime:** When is each file deleted or persists?
+### Final directory tree (on success):
+/var/log/system-security-upgrader/YYYY-mm-dd_HH-MM-SS_upgrade/
+	reflector.log
+	pacman.log
+/var/lib/system-security-upgrader/pending-check
 
 ---
 
@@ -81,6 +69,27 @@ For each major function in your script, document:
 - Exit behavior (does it continue or exit script?)
 
 **Why it matters:** Someone debugging a specific phase needs to know: "What does this function assume is true? What does it guarantee?"
+
+### init()
+**Purpose**: Check user, prepare things for the next functions 
+
+**Validates before executing:**
+- User: is root running the scrip? if no -> exit
+- SUDO_USER: Does the sudo_user have a home dir? if no -> exit
+
+**Creates/modifies:**
+- Creates a logdir
+- Creates dir for trigger file later
+- Creates logfiles from the tools used (reflector & pacman)
+
+**Failure cases:**
+- Invalid user running the scrip -> outputs error, exit 1
+- SUDO_USER does not have a home dir -> outputs error and possible solutions, exit 1
+
+**Exit behavior:**
+- Everything succeeds, no errors -> exit 0
+- Permission error (Invalid user running the script) or SUDO_USER does not have a home dir -> exit 1
+- Error while running reflector or pacman -> exit exit code of the tool with the error (if reflector exits with 2, it will exit with 2 too)
 
 **Example from unrelated project (database migration script):**
 ```
@@ -193,33 +202,11 @@ Answer 3 realistic "what if someone extends this?" scenarios. Show:
 
 ## Dependencies
 
-**What goes here:**
-List what must exist for this domain to work. Not just packages, but also:
-- System requirements (bash version, systemd available?)
-- File permissions needed
-- External services/tools
-
-**Why it matters:** Someone deploying needs to know: "What do I need to install? What permissions? What will break if X isn't available?"
-
-**Example from unrelated project (backup system):**
-```
-- bash 4+ (for associative arrays)
-- rsync 3.1+ (for incremental backups, Arch: pacman -S rsync)
-- ssh configured (public keys in ~/.ssh/authorized_keys)
-- Target disk with 2x source size available (for backups)
-- cron or systemd timer (for scheduling)
-- Write permission to /var/backups/ (where backups stored)
-```
-
-**Your task:** List:
-- Bash version needed?
-- reflector (how to install on Arch?)
-- pacman (built-in?)
-- systemctl command (requires systemd?)
-- File/directory permissions needed?
+- bash 5.3.9+ 
+- systemd & systemctl 259
+- file permissions
+- pacman 7.1.0+ 
+- reflector
+- basic gnu bash commands (date, echo, exit)
 
 ---
-
-**When done, paste your filled ARCHITECTURE.md here.**
-
-Then we do the same for `security_audit/` and `summarization/`.
