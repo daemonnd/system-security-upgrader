@@ -2,11 +2,28 @@
  Automated (or semi-automated) Arch Linux system upgrade followed by security auditing, with clear separation of concerns, reliable hand-off points, and future offline AI summarization support.
  It should be a multi-user system tool
 
+# Contents
+- [Motivations](#Motivations)
+- [Structure](#Structure)
+- [Dependencies](#Dependencies)
+- [Phase 1: Upgrade & Reboot](#Phase 1: Upgrade & Reboot)
+- [Phase 2: security check](#Phase 2: security check)
+- [Phase 3: ai summary](#Phase 3: ai summary)
+- [Installation](#Installation)
+- [Usage](#Usage)
+- [Logging](#Logging)
+- [Troubleshooting](#Troubleshooting)
+- [Future improvements](#Future improvements)
+- [Author Info](#Author Info)
+- [MIT License](#MIT License)
+- [TODO](#TODO)
 # Is this right for you?
+
 
 # Motivations
 - learn systemd and daemons better
 - automate security checks and upgrade
+- try to really finish a project
 
 # Structure
 `~/scripts/system-security-upgrader/` development dir
@@ -24,7 +41,7 @@
 - Arch-system 
 - reflector # for updating the mirrorlists
 - lynis # for security checking 
-- ollama + local ai model # for ai summary
+- [ollama](https://ollama.com/) + local ai model  + [fabric](https://github.com/danielmiessler/Fabric) # for ai summary
 - bash # script interpreter
 - arch-audit # for arch audit
 - ufw # for checking the status of the firewall
@@ -34,6 +51,7 @@
 - curl # for checking if the internet is working (optional)
 
 
+---
 # Phase 1: Upgrade & Reboot
 This script is there to perform system upgrades and reboot the system after they are done. 
 This script is ran by the root user, but the regular user have to be in the config.json file (done with install.sh)
@@ -45,12 +63,11 @@ Inside the logfile, the timestamps are just after it actually happened.
 The logs of the tools (reflector, pacman, systemd) are written in their own logfiles
 (`/var/log/system-security-upgrader/YYYY-mm-dd_HH-MM-SS_upgrade/tool.log` )
 
-
 Deployment path:
 `/usr/local/sbin/upgrade`
 
 What it does:
-1. Check if root is running it
+1. Check if root is running it and permissions
 2. Save the `$SUDO_USER` for later
 3. run reflector to get the latest mirrorlists and perform the upgrade faster
 4. upgrade the system
@@ -178,6 +195,7 @@ The logs of the tools (reflector, pacman, systemd, ...) are written in their own
 3. Run `sudo security-check` in the terminal to perform the security checks.
 
 # Future improvements
+- do not create trigger file for `securit-check.sh`, if pacman did not upgraded anything
 - country selection for reflector
 - email notifications
 - dry-run mode
