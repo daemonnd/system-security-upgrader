@@ -3,8 +3,22 @@
 # strict mode
 set -Eeuo pipefail
 
+# Cleanup function
+function cleanup {
+    echo
+    echo "Script interupted or failed. Cleaning up..."
+    echo "Upgrade script did not complete."
+    echo "Possible causes:"
+    echo "  - Script was interupted"
+    
+    exit 1
+}
+
 # trap errors
-trap 'echo "Error on line $LINENO: command \"$BASH_COMMAND\" exited with status $?" >&2' ERR
+trap 'echo "Error on line $LINENO: command \"$BASH_COMMAND\" exited with status $?" >&2' ERR 
+
+# trap signals
+trap 'cleanup' INT TERM
 
 function check_args {
     echo
