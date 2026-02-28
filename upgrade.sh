@@ -25,8 +25,10 @@ function check_args {
 }
 
 function init {
+    # initialize the script by getting information and creating dirs for the next steps
+    
     # checking if the root user is actually running the script
-    if [[ "$EUID" -ne 0 ]]; then
+    if [[ "$EUID" -ne 0 || -z "$SUDO_USER" ]]; then
         echo "Permission Error: This script needs root privileges or sudo." # logging does not work at this point
         exit 1
     fi
@@ -34,8 +36,9 @@ function init {
     # get the user that should own the ai summary
     # getting the user who executed the script
     user="$SUDO_USER"
-    # check if the user have a home dir for config
-    if [[ -d "/home/${user}" ]]; then
+    # check if the user have a home dir for config 
+    home_dir=$(getent passwd "$user" | awk -F ':' ' { print $6 } ')
+    if [[ -d "$home_dir" ]]; then
         echo "The user ${user@Q} has a home dir."
     else
         echo "The user ${user@Q} does not have a home dir."
@@ -50,8 +53,8 @@ function init {
     logdir="/var/log/system-security-upgrader/${logpattern}_upgrade/"
 
     # create neccessary dirs
-    mkdir -p /var/log/system-security-upgrader/
-    mkdir "$logdir"
+    mkdir -p /var/log/system-security-upgrader/ 
+    mkdir "$logdir" 
 
     # create security check trigger dir
     mkdir -p /var/lib/system-security-upgrader/
@@ -59,6 +62,8 @@ function init {
     echo "Executing upgrade script as root..."
 }
 function run_cmd {
+    # runs a command, logs its output, and handles any failures
+    
     local description="$1"
     shift
     local logfile="$1"
@@ -74,7 +79,7 @@ function run_cmd {
     fi
 }
 function update_mirrorlists {
-    # update the mirrorlists
+    # update the mirrorlists using reflector
     local reflector_logfile="${logdir}reflector.log"
     run_cmd "Updating the mirrorlists" "$reflector_logfile" reflector --latest 20 --country Germany,Netherlands,Belgium  --sort rate --save /etc/pacman.d/mirrorlist 
 }
@@ -84,6 +89,7 @@ function upgrade_system {
     run_cmd "Upgrading the system" "$pacman_logfile" pacman -Syu --noconfirm 
 }
 function end_script {
+    # end the script by asking the user wether to reboot, and creating a trigger file for phase 2
     # ask the user if the system should reboot
     while true; do
         read -p "Upgrade successful. Reboot now? (y/n) " answer
