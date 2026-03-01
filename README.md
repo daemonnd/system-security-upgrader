@@ -3,6 +3,7 @@
  It should be a multi-user system tool
 
 # Contents
+- [Features](#Features)
 - [Motivations](#Motivations)
 - [Structure](#Structure)
 - [Dependencies](#Dependencies)
@@ -17,6 +18,11 @@
 - [Author Info](#Author Info)
 - [MIT License](#MIT License)
 - [TODO](#TODO)
+# Features
+   - Automated mirror updates with reflector
+   - Full system upgrade with pacman
+   - Post-reboot security checks (lynis, rkhunter)
+   - AI-powered summary generation (optional)
 
 # Motivations
 - learn systemd and daemons better
