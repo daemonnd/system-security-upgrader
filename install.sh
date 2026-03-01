@@ -23,10 +23,11 @@ function init {
         echo "Permission Error: This script needs root privileges or sudo."
         exit 1
     fi
-
     # get the user
     user="$SUDO_USER"
-
+}
+function clone {
+    git clone https://github.com/daemonnd/system-security-upgrader.git && cd system-security-upgrader
 }
 function ai_summarizer_unit {
     # create the unit
@@ -52,6 +53,7 @@ EOF
 }
 function main {
     init "$@"
+    clone
     ai_summarizer_unit
     #check_args "$@" # not needed, because of $SUDO_USER
 
