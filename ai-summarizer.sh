@@ -3,8 +3,20 @@
 # strict mode
 set -Eeuo pipefail
 
+# Cleanup function
+function cleanup {
+    echo "Script interupted or failed. Cleaning up..."
+    echo "Ai summary did npt complete."
+    echo "Possible causes:"
+    echo "  - Script was interupted"
+
+    exit 1
+}
 # trap errors
 trap 'echo "Error on line $LINENO: command \"$BASH_COMMAND\" exited with status $?" >&2' ERR
+
+# trap signals
+trap 'cleanup' INT TERM
 
 function init {
     # check if the trigger file exists with read permission
@@ -39,6 +51,10 @@ function check_args {
 
 function filter {
     local logfile="$1"
+    if [[ ! -r "$logfile" ]]; then
+        echo "Permission error: logfile ${logfile@Q} can't be read by user ${user@Q}"
+        exit 1
+    fi
     echo "filterning ${logfile}..."
     awk '
         /Warning:|Suggestion:/ {
@@ -48,7 +64,6 @@ function filter {
     }
     ' "$logfile" | awk '!seen[$0]++' # uniq the loglines
     echo "filterning ${logfile}... Done"
-
 }
 function run_ai {
     # tool: $1
@@ -59,7 +74,7 @@ function run_ai {
     echo "# $tool" >> "$summaryfile"
     echo >> "$summaryfile"
 
-    filter "${logdir}${tool}.log"  | "/home/${user}/.local/bin/fabric" -sp "system_security_upgrader_$1" >> "$summaryfile"
+    filter "${logdir}${tool}.log"  | "/home/${user}/.local/bin/fabric" "-sp" "system_security_upgrader_$1" >> "$summaryfile"
     echo "Running local ai against the logs of ${tool}... Done"
 }
 function main {

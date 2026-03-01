@@ -47,6 +47,9 @@ function init {
     mkdir -p "/var/lib/system-security-upgrader/summaries/${user}"
     chown "$user":"$user" "/var/lib/system-security-upgrader/summaries/"
     chown "$user":"$user" "/var/lib/system-security-upgrader/summaries/${user}"
+    chmod 755 "/var/log/system-security-upgrader/${logpattern}_security-check"
+    chmod 755 /var/log/system-security-upgrader/
+    find /var/log/system-security-upgrader/"${logpattern}_security-check" -type f -exec chmod 755 {} +
 
 
     echo "Executing upgrade script as root..."

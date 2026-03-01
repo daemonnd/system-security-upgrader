@@ -17,8 +17,6 @@
 - [Author Info](#Author Info)
 - [MIT License](#MIT License)
 - [TODO](#TODO)
-# Is this right for you?
-
 
 # Motivations
 - learn systemd and daemons better
@@ -43,7 +41,6 @@
 - lynis # for security checking 
 - [ollama](https://ollama.com/) + local ai model  + [fabric](https://github.com/danielmiessler/Fabric) # for ai summary
 - bash # script interpreter
-- arch-audit # for arch audit
 - ufw # for checking the status of the firewall
 - systemd # for daemons and reboot
 - rkhunter # for rootkit checking
@@ -127,49 +124,11 @@ What it does:
 
 
 # Installation
-## quick installation
+## One-line install
 1. `cd` into the project dir
 2. run  the following:
 ```bash
-chmod +x install.sh
-sudo ./install.sh
-```
-
-## manual installation
-1. Copy scripts to /usr/local/sbin/ 
-2. Set owner as root and permissions to 755 to the scripts 
-3. Copy `security-upgrader.service` to  `/etc/systemd/system/security-upgrader.service` to set up the daemon
-4. Reload the daemons with `sudo systemctl daemon-reload`
-```bash
-# cd into the project dir
-# copy scripts
-sudo cp upgrade.sh /usr/local/sbin/upgrade
-sudo cp security-check.sh /usr/local/sbin/security-check
-
-# set permissions
-sudo chmod +x /usr/local/sbin/upgrade
-sudo chmod +x /usr/local/sbin/security-check
-# change owner to root for the scripts
-sudo chown root:root /usr/local/sbin/upgrade
-sudo chown root:root /usr/local/sbin/security-check
-
-# set up daemon
-sudo cp security-upgrader.service /etc/systemd/system/security-upgrader.service
-
-# reload daemons
-sudo systemctl daemon-reload 
-```
-# Usage
-```bash
-sudo upgrade
-```
-This will execute the upgrade script which will cause the reboot. After the reboot, the second script is executed automatically.
-
-How to inspect logs:
-```bash
-cat /var/log/system-security-upgrader/YYYY-mm-dd_HH-MM-SS_upgrade/* # logs from the upgrade script
-cat /var/log/system.security-upgrader/YYYY-mm-dd_HH-MM-SS_security-check/* # logs from the security check script
-journalctl -u security-upgrader.service
+curl -fsSL https://raw.githubusercontent.com/daemonnd/system-security-upgrader/main/install.sh | sudo bash
 ```
 
 # Logging
@@ -182,17 +141,33 @@ Inside logfile structure:
 The logs of the tools (reflector, pacman, systemd, ...) are written in their own logfiles
 (`/var/log/system-security-upgrader/YYYY-mm-dd_HH-MM-SS/tool.log` )
 
+# Usage
+```bash
+sudo upgrade
+```
+This will execute the upgrade script which will cause the reboot. After the reboot, the second script is executed automatically.
+
+How to inspect logs:
+```bash
+cat /var/log/system-security-upgrader/YYYY-mm-dd_HH-MM-SS_upgrade/* # logs from the upgrade script
+cat /var/log/system.security-upgrader/YYYY-mm-dd_HH-MM-SS_security-check/* # logs from the security check script
+journalctl -u security-upgrader.service # for security-check.sh
+journalctl -u security-summarizer.service # for ai-summarizer.sh
+```
+
 # Troubleshooting
 ## Common errors:
 - Permission denied: use sudo for upgrade script and check the file permissions that should be 755.
 - Command not found: check `$PATH` and shebang in the scripts
-- AI summary fails: check model availability, test the model manually
-- User not found: re-run `install.sh`, if it is still not working: run `sudo upgrade <username>` to set it manually
+- AI summary fails: check model availability, test the model manually, for this script a default configured model is required in fabric, finish `fabric --setup`
+- User not found: re-run `install.sh`
 
 ## Test without reboot:
 1. Run upgrade script (`upgrade`)
 2. When the read prompt appears, type `n`.
 3. Run `sudo security-check` in the terminal to perform the security checks.
+4. Run `security_upgrader_ai-summarizer` in the terminal to summarize the security check logs
+5. **Delete ai summarizer trigger file: `sudo rm /var/lib/system-security-upgrader/pending-ai-summary`**
 
 # Future improvements
 - do not create trigger file for `securit-check.sh`, if pacman did not upgraded anything
