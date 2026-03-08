@@ -7,7 +7,7 @@ set -euo pipefail
 trap 'echo "Error on line $LINENO: command \"$BASH_COMMAND\" exited with status $?" >&2' ERR
 
 function check_args {
-    echo 
+    echo
 }
 
 function init {
@@ -33,7 +33,7 @@ function init {
 
     # DEBUG
     echo "User: $user"
-    
+
     # create logfile path pattern
     logpattern=$(date "+%Y-%m-%d_%H-%M-%S")
 
@@ -51,7 +51,6 @@ function init {
     chmod 755 /var/log/system-security-upgrader/
     find /var/log/system-security-upgrader/"${logpattern}_security-check" -type f -exec chmod 755 {} +
 
-
     echo "Executing upgrade script as root..."
 }
 function run_cmd {
@@ -61,7 +60,7 @@ function run_cmd {
     shift
 
     echo "${description}..."
-    if "$@" &>> "$logfile" 2>&1; then
+    if "$@" &>>"$logfile" 2>&1; then
         echo "${description}... Done"
     else
         local exit_code="$?"
@@ -80,7 +79,7 @@ function run_lynis {
 function run_rkhunter {
     # update rkhunter
     local rkhunter_update_logfile="${logdir}rkhunter_update.log"
-    run_cmd "Updating rkhunter database" "$rkhunter_update_logfile"  rkhunter --update --logfile "$rkhunter_update_logfile"
+    run_cmd "Updating rkhunter database" "$rkhunter_update_logfile" rkhunter --update --logfile "$rkhunter_update_logfile"
 
     # update rkhunter's file prosperties
     local rkhunter_propupd_logfile="${logdir}rkhunter_propupd.log"
@@ -88,19 +87,18 @@ function run_rkhunter {
 
     # run rkhunter with warnings only
     local rkhunter_logfile="${logdir}rkhunter.log"
-    run_cmd "Running rkhunter with warnings only" "$rkhunter_logfile" rkhunter --check --sk --nocolors --rwo 
-    
+    run_cmd "Running rkhunter with warnings only" "$rkhunter_logfile" rkhunter --check --sk --nocolors --rwo
 }
 function end_script {
     echo "All the security checks have been performed. It took $SECONDS seconds."
-    rm -f /var/lib/system-security-upgrader/pending-check # remove file that triggers the security check 
+    rm -f /var/lib/system-security-upgrader/pending-check # remove file that triggers the security check
     echo "The 'security-upgrader.service' daemon has been disabled by removing the condition path '/var/lib/system-security-upgrader/pending-check'."
 
     # change the owner of the logfiles to the $user
     chown "$user":"$user" "$logdir"*
     chown "$user":"$user" "$logdir"
     # creating the trigger file for the ai summarization daemon
-    cat <<EOF > /var/lib/system-security-upgrader/pending-ai-summary
+    cat <<EOF >/var/lib/system-security-upgrader/pending-ai-summary
 $user
 $logdir
 $logpattern
@@ -110,7 +108,6 @@ EOF
     chmod 755 /var/lib/system-security-upgrader/
     chmod 755 /var/lib/system-security-upgrader/pending-ai-summary
 
-
     echo "All the logs have been written to ${logdir@Q}"
     # DEBUG
     echo "USER: $user"
@@ -118,12 +115,8 @@ EOF
 function main {
     init
     echo "Executing security check script..."
-    run_lynis &
-    lynis_pid="$!"
-    run_rkhunter &
-    rkhunter_pid="$!"
-
-    wait "$lynis_pid" "$rkhunter_pid"
+    run_lynis
+    run_rkhunter
 
     end_script
 
@@ -132,4 +125,3 @@ function main {
 
 # call main with all args, as given
 main "$@"
-
