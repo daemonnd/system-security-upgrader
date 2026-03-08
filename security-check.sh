@@ -120,7 +120,7 @@ function main {
     echo "Executing security check script..."
     run_lynis &
     lynis_pid="$!"
-    run_rkhunter
+    run_rkhunter &
     rkhunter_pid="$!"
 
     wait "$lynis_pid" "$rkhunter_pid"
