@@ -1,50 +1,57 @@
 # Project Overview
+
  Automated (or semi-automated) Arch Linux system upgrade followed by security auditing, with clear separation of concerns, reliable hand-off points, and future offline AI summarization support.
  It should be a multi-user system tool
 
 # Contents
-- [Features](#Features)
-- [Motivations](#Motivations)
-- [Structure](#Structure)
-- [Dependencies](#Dependencies)
+
+- [Features](#features)
+- [Motivations](#motivations)
+- [Structure](#structure)
+- [Dependencies](#dependencies)
 - [Phase 1: Upgrade & Reboot](#Phase 1: Upgrade & Reboot)
 - [Phase 2: security check](#Phase 2: security check)
 - [Phase 3: ai summary](#Phase 3: ai summary)
-- [Installation](#Installation)
-- [Usage](#Usage)
-- [Logging](#Logging)
-- [Troubleshooting](#Troubleshooting)
+- [Installation](#installation)
+- [Usage](#usage)
+- [Logging](#logging)
+- [Troubleshooting](#troubleshooting)
 - [Future improvements](#Future improvements)
 - [Author Info](#Author Info)
 - [MIT License](#MIT License)
-- [TODO](#TODO)
+- [TODO](#todo)
+
 # Features
-   - Automated mirror updates with reflector
-   - Full system upgrade with pacman
-   - Post-reboot security checks (lynis, rkhunter)
-   - AI-powered summary generation (optional)
+
+- Automated mirror updates with reflector
+- Full system upgrade with pacman
+- Post-reboot security checks (lynis, rkhunter)
+- AI-powered summary generation (optional)
 
 # Motivations
+
 - learn systemd and daemons better
 - automate security checks and upgrade
 - try to really finish a project
 
 # Structure
+
 `~/scripts/system-security-upgrader/` development dir
-	`README.md` docs
-	`upgrade.sh` update mirrorlist with reflector, upgrade system & reboot
-	`security-check.sh` check system security, summarize with ai
-	`ai-summarizer.sh` summarize logs with ai and save to md file
-	`install.sh` installation script
+ `README.md` docs
+ `upgrade.sh` update mirrorlist with reflector, upgrade system & reboot
+ `security-check.sh` check system security, summarize with ai
+ `ai-summarizer.sh` summarize logs with ai and save to md file
+ `install.sh` installation script
 `/var/log/system-security-upgrader/` log files
-`/usr/local/sbin/upgrade` deployment of `~/scripts/system-security-upgrader/upgrade.sh` 
+`/usr/local/sbin/upgrade` deployment of `~/scripts/system-security-upgrader/upgrade.sh`
 `/usr/local/sbin/security-check` deployment of `~/scripts/system-security-upgrader/security-check.sh`
 `/usr/local/bin/security_upgrader_ai-summarizer` deployment of `~/scripts/system-security-upgrader/ai-summarizer.sh`
 
 # Dependencies
-- Arch-system 
+
+- Arch-system
 - reflector # for updating the mirrorlists
-- lynis # for security checking 
+- lynis # for security checking
 - [ollama](https://ollama.com/) + local ai model  + [fabric](https://github.com/danielmiessler/Fabric) # for ai summary
 - bash # script interpreter
 - ufw # for checking the status of the firewall
@@ -53,15 +60,15 @@
 - notifications with notify-send # for user interaction (such as asking the user if the computer should reboot)
 - curl # for checking if the internet is working (optional)
 
-
 ---
+
 # Phase 1: Upgrade & Reboot
-This script is there to perform system upgrades and reboot the system after they are done. 
+
+This script is there to perform system upgrades and reboot the system after they are done.
 This script is ran by the root user, but the regular user have to be in the config.json file (done with install.sh)
 
 Note: The dirname YYYY-mm-dd_HH-MM-SS is named by the time the script STARTED.
 Inside the logfile, the timestamps are just after it actually happened.
-
 
 The logs of the tools (reflector, pacman, systemd) are written in their own logfiles
 (`/var/log/system-security-upgrader/YYYY-mm-dd_HH-MM-SS_upgrade/tool.log` )
@@ -70,6 +77,7 @@ Deployment path:
 `/usr/local/sbin/upgrade`
 
 What it does:
+
 1. Check if root is running it and permissions
 2. Save the `$SUDO_USER` for later
 3. run reflector to get the latest mirrorlists and perform the upgrade faster
@@ -77,12 +85,12 @@ What it does:
 5. if the upgrade finished without errors, ask user via read  to reboot now and then reboot, if not, the script exits with exit code 0 and on the next reboot the security checks will be performed.
 
 # Phase 2: security check
+
 This script is there to run security tools, write security logs which will be analyzed later by local ai.
 It will be executed by the root user because the security tools need root privileges.
 
 Note: The dirname YYYY-mm-dd_HH-MM-SS is named by the time the script STARTED.
 Inside the logfile, the timestamps are just after it actually happened.
-
 
 The logs of the tools (lynis, rkhunter, arch-audit, systemd, ...) are written in their own logfiles
 (`/var/log/system-security-upgrader/YYYY-mm-dd_HH-MM-SS_security-check/tool.log` )
@@ -92,13 +100,13 @@ Deployment path:
 Daemon path:
 `/etc/systemd/system/security-upgrader.service`
 
-
 What it does:
+
 1. Run security tools (lynis, rkhunter, archaudit) and write the stdout and stderr into a logfile for each tool
 2. trigger the next script by creating a trigger file with the path to the log dir as content.
 
-
 # Phase 3: ai summary
+
 This script summarizes the logs from the tools created in phase 3 using local ai with ollama, and produces `summary.md` in the log dir of the 2nd phase. The logs of ollama and the tools used in this script will maybe be shared with the ones of the 2nd phase.
 
 Note: The dirname YYYY-mm-dd_HH-MM-SS is named by the time the script STARTED.
@@ -123,37 +131,44 @@ the user, NOT ROOT
 The ai summary is for convenience and for being delivered to the user, it is more comfortable to read than the logs (e.g. in an email)
 
 What it does:
+
 1. Take the logs from the 2nd phase
 2. Filter them down to warings, uniq content and summaries
 3. Feed the filtered content to local ai with a custom system prompt and summarize it
 4. Write the ai output to the file
 
-
 # Installation
+
 ## One-line install
+
 1. `cd` into the project dir
 2. run  the following:
+
 ```bash
 curl -fsSL https://raw.githubusercontent.com/daemonnd/system-security-upgrader/main/install.sh | sudo bash
 ```
 
 # Logging
+
 Main Logfile: `/var/log/system-security-upgrader/YYYY-mm-dd_HH-MM-SS_script/script.log`
 Note: The dirname YYYY-mm-dd_HH-MM-SS is named by the time the script STARTED.
 Inside the logfile, the timestamps are just after it actually happened.
 Inside logfile structure:
-`YYYY-mm-dd_HH-MM-SS - LOGLEVEL: message` 
+`YYYY-mm-dd_HH-MM-SS - LOGLEVEL: message`
 
 The logs of the tools (reflector, pacman, systemd, ...) are written in their own logfiles
 (`/var/log/system-security-upgrader/YYYY-mm-dd_HH-MM-SS/tool.log` )
 
 # Usage
+
 ```bash
 sudo upgrade
 ```
+
 This will execute the upgrade script which will cause the reboot. After the reboot, the second script is executed automatically.
 
 How to inspect logs:
+
 ```bash
 cat /var/log/system-security-upgrader/YYYY-mm-dd_HH-MM-SS_upgrade/* # logs from the upgrade script
 cat /var/log/system.security-upgrader/YYYY-mm-dd_HH-MM-SS_security-check/* # logs from the security check script
@@ -162,13 +177,16 @@ journalctl -u security-summarizer.service # for ai-summarizer.sh
 ```
 
 # Troubleshooting
-## Common errors:
+
+## Common errors
+
 - Permission denied: use sudo for upgrade script and check the file permissions that should be 755.
 - Command not found: check `$PATH` and shebang in the scripts
 - AI summary fails: check model availability, test the model manually, for this script a default configured model is required in fabric, finish `fabric --setup`
 - User not found: re-run `install.sh`
 
-## Test without reboot:
+## Test without reboot
+
 1. Run upgrade script (`upgrade`)
 2. When the read prompt appears, type `n`.
 3. Run `sudo security-check` in the terminal to perform the security checks.
@@ -176,6 +194,7 @@ journalctl -u security-summarizer.service # for ai-summarizer.sh
 5. **Delete ai summarizer trigger file: `sudo rm /var/lib/system-security-upgrader/pending-ai-summary`**
 
 # Future improvements
+
 - do not create trigger file for `securit-check.sh`, if pacman did not upgraded anything
 - country selection for reflector
 - email notifications
@@ -192,7 +211,9 @@ journalctl -u security-summarizer.service # for ai-summarizer.sh
 - only make ONE logdir for both upgrade and security checks
 - add json config
 - add log cleanup
+
 # Author Info
+
 - username: daemonnd
 - email: find at github profile
 
@@ -217,13 +238,14 @@ MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
 NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
 LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
 OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
-WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. 
+WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 Here is a concise, README-ready summary of the **system-security-upgrader** project architecture, focused only on the most relevant structural and operational aspects (in bullet-point form):
 
-
-
 # TODO
+
+- add += Path for making sure that everyt needed command is avalible
+
 - add `architecture/` dir with full architecture docs
 - add ai summarizer daemon to trigger the ai-summarizer.sh script
 - make a real test (upgrade -> reboot -> security-upgrader.service -> security-check.sh -> ai start daemon -> ai-summarizer.sh)
@@ -232,3 +254,4 @@ Here is a concise, README-ready summary of the **system-security-upgrader** proj
 - make summary for each tool, summary.md itself should be the summary of those.
 - fix the bug that the handoff file for running the ai summarizer does not work
 - make the main function in `ai-summarizer.sh` run as user, the unit as root or drop the permissions for the ai tool fabric
+
