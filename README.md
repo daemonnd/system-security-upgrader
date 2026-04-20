@@ -193,6 +193,10 @@ journalctl -u security-summarizer.service # for ai-summarizer.sh
 4. Run `security_upgrader_ai-summarizer` in the terminal to summarize the security check logs
 5. **Delete ai summarizer trigger file: `sudo rm /var/lib/system-security-upgrader/pending-ai-summary`**
 
+# Limitations
+
+- cannot detect stuck-but-running processes
+
 # Future improvements
 
 - do not create trigger file for `securit-check.sh`, if pacman did not upgraded anything
@@ -254,4 +258,3 @@ Here is a concise, README-ready summary of the **system-security-upgrader** proj
 - make summary for each tool, summary.md itself should be the summary of those.
 - fix the bug that the handoff file for running the ai summarizer does not work
 - make the main function in `ai-summarizer.sh` run as user, the unit as root or drop the permissions for the ai tool fabric
-
