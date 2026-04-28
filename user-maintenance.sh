@@ -238,24 +238,21 @@ create_log_directory() {
     touch "$FLATPAK_LOG"
 }
 
+# run yay interactively as the user, so that it can ask for password if needed and also has access to the correct home directory and thus the yay database
 run_yay() {
-    local exit_code
-
-    exit_code=$(
-        execute_command 3600 "$YAY_LOG" \
-            runuser -u "$SUDO_USER" -- \
-            env HOME="$HOME" \
-            yay -Syu --noconfirm
-    )
-    echo "$exit_code"
+    sudo -u "$SUDO_USER" env HOME="$HOME" yay -Syu --needed 2>&1 | tee "$YAY_LOG"
 }
 
+# run flatpak as root, but with the environment of the user, so that it
+# has access to the correct home directory and thus the flatpak installation
+# of the user. It does not need to ask for password, because it is already run with sudo
 run_flatpak() {
     local exit_code
     exit_code=$(execute_command 1200 "$FLATPAK_LOG" "sudo" "runuser" "-u" "user" "--" "env" "HOME=/home/user" "flatpak" "update" "--assumeyes")
     echo "$exit_code"
 }
 
+# main function to orchestrate the execution of the script
 main() {
     if [[ "$env_level" -eq 3 ]]; then
         overall_failure=1
@@ -272,24 +269,23 @@ main() {
         echo "ERROR: Error while validating the environment: $env_reason"
         overall_failure=1
     fi
-    echo "Env validated successfully"
+    echo "INFO: Env validated successfully"
     echo "USER=$SUDO_USER"
 
     create_log_directory
-    echo "log dir created successfully"
-    echo "home: $HOME"
 
-    local yay_exit_code
-    echo "before running yay"
-    yay_exit_code=$(run_yay)
-    echo "after runnning yay"
-    #yay_exit_code=0
+    # run yay with set +e, so that we can capture the exit code and evaluate it, instead of exiting immediately on failure
+    set +e
+    run_yay
+    local yay_exit_code="$?"
+    set -e
+
+    # evaluate the failure of yay based on its exit code and the content of its log file, and update the overall failure level accordingly
     local yay_evaluation
     yay_evaluation="$(evaluate_failure "$yay_exit_code" "$YAY_LOG")"
     local yay_level="${yay_evaluation%%|*}"
     local yay_reason="${yay_evaluation##*|}"
-    echo "yay evaluation: level=$yay_level, reason=$yay_reason"
-    echo "yay exit code: $yay_exit_code"
+    echo "INFO: yay evaluation: level=$yay_level, reason=$yay_reason"
     if [[ "$yay_level" -eq 3 ]]; then
         overall_failure=1
         echo "FATAL: Error while updating packages with yay: $yay_reason"
