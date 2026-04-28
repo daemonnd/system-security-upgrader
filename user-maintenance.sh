@@ -39,28 +39,16 @@ HOME="$home_from_getent"
 # -----------------------------------------------------------------------------
 # 2. Command Executor
 # -----------------------------------------------------------------------------
+#
+# function to execute a non-interactive command with a timeout and log its output to a file.
 execute_command() {
     set +e
-
     local timeout_seconds="$1"
     shift
     local log_file="$1"
     shift
-    printf 'EXEC:' >>"$log_file"
-    for arg in "$@"; do
-        printf ' [%s]' "$arg" >>"$log_file"
-    done
-    printf '\n' >>"$log_file"
-    if [[ "$#" -eq 0 ]]; then
-        echo "NO COMMAND PROVIDED" >&2
-        return 2
-    fi
 
-    for arg in "$@"; do
-        printf 'ARG=%q\n' "$arg" >>"$log_file"
-    done
-
-    timeout "$timeout_seconds" -- "$@" </dev/null >>"$log_file" 2>&1
+    timeout "$timeout_seconds" "$@" </dev/null >>"$log_file" 2>&1
     local exit_code=$?
 
     echo "$exit_code"
