@@ -41,19 +41,27 @@ HOME="$home_from_getent"
 # -----------------------------------------------------------------------------
 execute_command() {
     set +e
+
     local timeout_seconds="$1"
     shift
     local log_file="$1"
     shift
-    local cmd="$1"
-
-    local exit_code=0
-
-    if timeout "$timeout_seconds" bash -c "$cmd" >>"$log_file" 2>&1; then # then #timeout "$timeout_seconds"
-        exit_code=0
-    else
-        exit_code=$?
+    printf 'EXEC:' >>"$log_file"
+    for arg in "$@"; do
+        printf ' [%s]' "$arg" >>"$log_file"
+    done
+    printf '\n' >>"$log_file"
+    if [[ "$#" -eq 0 ]]; then
+        echo "NO COMMAND PROVIDED" >&2
+        return 2
     fi
+
+    for arg in "$@"; do
+        printf 'ARG=%q\n' "$arg" >>"$log_file"
+    done
+
+    timeout "$timeout_seconds" -- "$@" </dev/null >>"$log_file" 2>&1
+    local exit_code=$?
 
     echo "$exit_code"
     set -e
@@ -232,13 +240,19 @@ create_log_directory() {
 
 run_yay() {
     local exit_code
-    exit_code=$(execute_command 3600 "$YAY_LOG" "sudo -E -u $SUDO_USER yay -Syu --noconfirm")
+
+    exit_code=$(
+        execute_command 3600 "$YAY_LOG" \
+            runuser -u "$SUDO_USER" -- \
+            env HOME="$HOME" \
+            yay -Syu --noconfirm
+    )
     echo "$exit_code"
 }
 
 run_flatpak() {
     local exit_code
-    exit_code=$(execute_command 1200 "$FLATPAK_LOG" "sudo -E -u $SUDO_USER flatpak update --assumeyes")
+    exit_code=$(execute_command 1200 "$FLATPAK_LOG" "sudo" "runuser" "-u" "user" "--" "env" "HOME=/home/user" "flatpak" "update" "--assumeyes")
     echo "$exit_code"
 }
 
@@ -266,11 +280,16 @@ main() {
     echo "home: $HOME"
 
     local yay_exit_code
+    echo "before running yay"
     yay_exit_code=$(run_yay)
+    echo "after runnning yay"
+    #yay_exit_code=0
     local yay_evaluation
     yay_evaluation="$(evaluate_failure "$yay_exit_code" "$YAY_LOG")"
     local yay_level="${yay_evaluation%%|*}"
     local yay_reason="${yay_evaluation##*|}"
+    echo "yay evaluation: level=$yay_level, reason=$yay_reason"
+    echo "yay exit code: $yay_exit_code"
     if [[ "$yay_level" -eq 3 ]]; then
         overall_failure=1
         echo "FATAL: Error while updating packages with yay: $yay_reason"
@@ -289,7 +308,8 @@ main() {
     echo "INFO: yay executed successfully"
 
     local flatpak_exit_code
-    flatpak_exit_code=$(run_flatpak)
+    #flatpak_exit_code=$(run_flatpak)
+    flatpak_exit_code=0
     local flatpak_evaluation
     flatpak_evaluation="$(evaluate_failure "$flatpak_exit_code" "$FLATPAK_LOG")"
     local flatpak_level="${flatpak_evaluation%%|*}"
