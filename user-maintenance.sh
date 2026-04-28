@@ -58,9 +58,11 @@ execute_command() {
 # -----------------------------------------------------------------------------
 # 3. Failure Evaluator
 # -----------------------------------------------------------------------------
-# Return:
-# Error level
 #
+# function to evaluate the failure of a command based on its exit code and the content of its log file.
+# It uses common conventions for exit codes and also checks for common error keywords in the log file.
+# Return:
+# Error level| reason for the error
 evaluate_failure() {
     local exit_code="$1"
     local log_file="$2"
@@ -89,6 +91,8 @@ evaluate_failure() {
 # -----------------------------------------------------------------------------
 # 4. State Manager
 # -----------------------------------------------------------------------------
+# function to set the state variables to their default values,
+# which are used when the state file is not valid or does not exist.
 set_state_to_default() {
     last_attempt=0
     last_success=0
@@ -96,6 +100,8 @@ set_state_to_default() {
     last_log_path=""
 }
 
+# function to read the state from the state file.
+# If the state file does not exist, it sets the state to default values.
 read_state() {
     if [[ ! -f "$STATE_FILE" ]]; then
         set_state_to_default
@@ -142,6 +148,9 @@ read_state() {
     echo "last_log_path=${last_log_path:-}"
 }
 
+# function to validate that a given string is a valid date in the YYYY-mm-dd format.
+# It returns true if the date is valid, and false otherwise.
+# It also takes a description as a second argument, which is used for error messages.
 validate_date() {
     local last_attempt="$1"
     local description="$2"
@@ -152,6 +161,9 @@ validate_date() {
     fi
 }
 
+# function to gather the state info, which is needed to update the state after the execution of the tools.
+# It reads the current state and updates it based on whether there was an overall failure or not.
+# It returns a string with the new state values separated by |, so that they can be easily parsed by the caller.
 gather_state_info() {
     local last_success
     local failure_count
@@ -174,6 +186,7 @@ gather_state_info() {
     echo "$last_attempt|$last_success|$failure_count|$last_log_path"
 }
 
+# function to atomically write the state
 update_state() {
     local last_attempt="$1"
     local last_success="$2"
@@ -292,8 +305,9 @@ main() {
     echo "INFO: yay executed successfully"
 
     local flatpak_exit_code
-    #flatpak_exit_code=$(run_flatpak)
-    flatpak_exit_code=0
+    flatpak_exit_code=$(run_flatpak)
+
+    # evaluate the failure of flatpak based on its exit code and the content of its log file, and update the overall failure level accordingly
     local flatpak_evaluation
     flatpak_evaluation="$(evaluate_failure "$flatpak_exit_code" "$FLATPAK_LOG")"
     local flatpak_level="${flatpak_evaluation%%|*}"
