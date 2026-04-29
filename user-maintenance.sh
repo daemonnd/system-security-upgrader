@@ -19,6 +19,8 @@ declare -g env_reason="ok"
 # 1. Environment Validator
 # -----------------------------------------------------------------------------
 
+SUDO_USER="${SUDO_USER:-$USER}"
+
 if [[ -z "${SUDO_USER+x}" || -z "$SUDO_USER" ]]; then
     env_level=3
     env_reason="SUDO_USER is not set or empty"
@@ -165,9 +167,6 @@ validate_date() {
 # It reads the current state and updates it based on whether there was an overall failure or not.
 # It returns a string with the new state values separated by |, so that they can be easily parsed by the caller.
 gather_state_info() {
-    local last_success
-    local failure_count
-    local last_attempt
 
     last_attempt=$(date "+%s")
 
@@ -179,6 +178,7 @@ gather_state_info() {
         current_state=$(read_state)
         failure_count=$(echo "$current_state" | grep '^failure_count=' | cut -d= -f2)
         failure_count=$((failure_count + 1))
+        last_success=$(echo "$current_state" | grep '^last_success=' | cut -d= -f2)
     fi
 
     local last_log_path="$LOG_DIR"
@@ -200,6 +200,8 @@ update_state() {
         exit 1
     fi
 
+    # write state to a temporary file first,
+    # so that we don't end up with a corrupted state file if the script is interrupted while writing
     {
         echo "last_attempt=$last_attempt"
         echo "last_success=$last_success"
@@ -207,18 +209,27 @@ update_state() {
         echo "last_log_path=$last_log_path"
     } >"$temp_file"
 
+    # moving the temporary file to the final location is an atomic operation,
+    # so it either succeeds completely or fails without changing the existing state file
     if ! mv "$temp_file" "$STATE_FILE"; then
         rm -f "$temp_file"
-        echo "ERROR: Failed to write state file" >&2
+        echo "FATAL: Failed to write state file, this run is silent and did not updated the state file" >&2
         exit 1
     fi
 
+    # changing ownership of state file to root,
+    # so that it cannot be modified by non-root users
+    # and thus ensures the integrity of the state file
+    chown root:root "$STATE_FILE"
+    # setting permissions to 644, so that it is readable by everyone but only writable by root
     chmod 644 "$STATE_FILE"
 }
 
 # -----------------------------------------------------------------------------
 # 5. Orchestrator
 # -----------------------------------------------------------------------------
+#
+# create a log directory for the current run, which is based on the current timestamp.
 create_log_directory() {
     local timestamp
     timestamp="$(date +%Y-%m-%d_%H-%M-%S)"
@@ -228,7 +239,7 @@ create_log_directory() {
     echo "INFO: Log directory: $LOG_DIR"
 
     if ! mkdir -p "$LOG_DIR"; then
-        echo "ERROR: Failed to create log directory" >&2
+        echo "ERROR: Failed to create log directory, exiting" >&2
         exit 1
     fi
 
@@ -239,7 +250,9 @@ create_log_directory() {
     touch "$FLATPAK_LOG"
 }
 
-# run yay interactively as the user, so that it can ask for password if needed and also has access to the correct home directory and thus the yay database
+# run yay interactively as the user,
+# so that it can ask for password if needed and also
+# has access to the correct home directory and thus the yay database
 run_yay() {
     sudo -u "$SUDO_USER" env HOME="$HOME" yay -Syu --needed 2>&1 | tee "$YAY_LOG"
 }
@@ -271,17 +284,19 @@ main() {
         overall_failure=1
     fi
     echo "INFO: Env validated successfully"
-    echo "USER=$SUDO_USER"
 
     create_log_directory
 
-    # run yay with set +e, so that we can capture the exit code and evaluate it, instead of exiting immediately on failure
+    # run yay with set +e,
+    # so that we can capture the exit code and evaluate it,
+    # instead of exiting immediately on failure
     set +e
     run_yay
     local yay_exit_code="$?"
     set -e
 
-    # evaluate the failure of yay based on its exit code and the content of its log file, and update the overall failure level accordingly
+    # evaluate the failure of yay based on its exit code and the content of its log file,
+    # and update the overall failure level accordingly
     local yay_evaluation
     yay_evaluation="$(evaluate_failure "$yay_exit_code" "$YAY_LOG")"
     local yay_level="${yay_evaluation%%|*}"
@@ -302,12 +317,13 @@ main() {
         echo "ERROR: Error while updating packages with yay: $yay_reason"
         overall_failure=1
     fi
-    echo "INFO: yay executed successfully"
+    echo "INFO: yay finished updating aur packages"
 
     local flatpak_exit_code
     flatpak_exit_code=$(run_flatpak)
 
-    # evaluate the failure of flatpak based on its exit code and the content of its log file, and update the overall failure level accordingly
+    # evaluate the failure of flatpak based on its exit code and the content of its log file,
+    # and update the overall failure level accordingly
     local flatpak_evaluation
     flatpak_evaluation="$(evaluate_failure "$flatpak_exit_code" "$FLATPAK_LOG")"
     local flatpak_level="${flatpak_evaluation%%|*}"
@@ -327,7 +343,7 @@ main() {
         echo "ERROR: Error while updating packages with flatpak: $flatpak_reason"
         overall_failure=1
     fi
-    echo "INFO: flatpak executed successfully"
+    echo "INFO: flatpak finished updating flatpaks"
 
     local state_info
     state_info=$(gather_state_info)
