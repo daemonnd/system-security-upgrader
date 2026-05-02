@@ -107,7 +107,6 @@ set_state_to_default() {
 read_state() {
     if [[ ! -f "$STATE_FILE" ]]; then
         set_state_to_default
-        return
     fi
 
     last_attempt=$(grep 'last_attempt' <"$STATE_FILE" | awk -F '=' ' { print $2 } ')
@@ -123,20 +122,17 @@ read_state() {
     last_attempt_valid=$(validate_date "$last_attempt" "last_attempt")
     if [[ "$last_attempt_valid" == "false" ]]; then
         set_state_to_default
-        return
     fi
 
     local last_success_valid
     last_success_valid=$(validate_date "$last_success" "last_success")
     if [[ "$last_success_valid" == "false" ]]; then
-        set_state_to_default
         return
     fi
 
     if [[ "$failure_count" =~ ^[0-9]+$ ]]; then
         :
     else
-        echo "failure_count is $failure_count in $STATE_FILE, but it has to be an integer" >&2
         set_state_to_default
     fi
 
@@ -153,13 +149,13 @@ read_state() {
 # function to validate that a given string is a valid date in the YYYY-mm-dd format.
 # It returns true if the date is valid, and false otherwise.
 # It also takes a description as a second argument, which is used for error messages.
+# valid: 1 invalid: 0
 validate_date() {
     local last_attempt="$1"
-    local description="$2"
     if [[ "$last_attempt" =~ ^[0-9]+$ ]]; then
-        :
+        echo 1
     else
-        echo "$description is $last_attempt in $STATE_FILE, but it has to be a date in the YYYY-mm-dd format." >&2
+        echo 0
     fi
 }
 
