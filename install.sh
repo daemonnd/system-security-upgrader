@@ -31,7 +31,7 @@ function clone {
 }
 function ai_summarizer_unit {
     # create the unit
-    cat <<EOF > /etc/systemd/system/security-summarizer.service
+    cat <<EOF >/etc/systemd/system/security-summarizer.service
 [Unit]
 Description=Run ai summary against logs of security tools
 After=security-upgrader.service
@@ -58,32 +58,32 @@ function main {
     #check_args "$@" # not needed, because of $SUDO_USER
 
     # copy scripts
-     cp upgrade.sh /usr/local/sbin/upgrade
-     cp security-check.sh /usr/local/sbin/security-check
-     cp ai-summarizer.sh /usr/local/bin/security_upgrader_ai-summarizer
+    cp upgrade.sh /usr/local/sbin/upgrade
+    cp security-check.sh /usr/local/sbin/security-check
+    cp ai-summarizer.sh /usr/local/bin/security_upgrader_ai-summarizer
 
     # set permissions
-     chmod +x /usr/local/sbin/upgrade
-     chmod +x /usr/local/sbin/security-check
+    chmod +x /usr/local/sbin/upgrade
+    chmod +x /usr/local/sbin/security-check
     # change owner to root for the scripts
-     chown root:root /usr/local/sbin/upgrade
-     chown root:root /usr/local/sbin/security-check
+    chown root:root /usr/local/sbin/upgrade
+    chown root:root /usr/local/sbin/security-check
 
     # set up daemon
-     cp security-upgrader.service /etc/systemd/system/security-upgrader.service
+    cp security-upgrader.service /etc/systemd/system/security-upgrader.service
 
     # reload daemons
-     systemctl daemon-reload    
+    systemctl daemon-reload
 
-     # enable services
-     systemctl enable security-upgrader.service
-     systemctl enable security-summarizer.service
+    # enable services
+    systemctl enable security-upgrader.service
+    systemctl enable security-summarizer.service
 
-     # create .config dir & copy system prompts in there for fabric
-     mkdir -p "/home/${user}/.config/system-security-upgrader/system_prompts"
-     cp -r system_prompts/* "/home/${user}/.config/system-security-upgrader/system_prompts/"
-     chown "$user":"$user" "/home/${user}/.config/system-security-upgrader/"
-     chown "$user":"$user" "/home/${user}/.config/system-security-upgrader/"*
+    # create .config dir & copy system prompts in there for fabric
+    mkdir -p "/home/${user}/.config/system-security-upgrader/system_prompts"
+    cp -r system_prompts/* "/home/${user}/.config/system-security-upgrader/system_prompts/"
+    chown "$user":"$user" "/home/${user}/.config/system-security-upgrader/"
+    chown "$user":"$user" "/home/${user}/.config/system-security-upgrader/"*
 
     # cp patterns to fabric
     cp -r -- "/home/${user}/.config/system-security-upgrader/system_prompts/." /home/${user}/.config/fabric/patterns/
@@ -93,4 +93,3 @@ function main {
 
 # call main with all args, as given
 main "$@"
-
