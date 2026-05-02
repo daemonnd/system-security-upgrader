@@ -26,7 +26,7 @@ function init {
     fi
     # get the user & logdir
     declare -a tmp_arr
-    mapfile -t tmp_arr < /var/lib/system-security-upgrader/pending-ai-summary
+    mapfile -t tmp_arr </var/lib/system-security-upgrader/pending-ai-summary
     user="${tmp_arr[0]}"
     logdir="${tmp_arr[1]}"
     logpattern="${tmp_arr[2]}"
@@ -38,8 +38,8 @@ function init {
 
     # check if the prompts are there # TODO
 
-    summaryfile="/var/lib/system-security-upgrader/summaries/"${user}"/"${logpattern}"_ai-summary.md"
-    
+    summaryfile=/var/lib/system-security-upgrader/summaries/"${user}"/"${logpattern}"_ai-summary.md
+
     echo "User: $user"
     echo "Summaryfile: $summaryfile"
     echo "The initialization of this script went well."
@@ -70,19 +70,18 @@ function run_ai {
     local tool="$1"
     echo "Running local ai against the logs of ${tool}..."
 
-    echo >> "$summaryfile"
-    echo "# $tool" >> "$summaryfile"
-    echo >> "$summaryfile"
+    echo >>"$summaryfile"
+    echo "# $tool" >>"$summaryfile"
+    echo >>"$summaryfile"
 
-    filter "${logdir}${tool}.log"  | "/home/${user}/.local/bin/fabric" "-sp" "system_security_upgrader_$1" >> "$summaryfile"
+    filter "${logdir}${tool}.log" | "/home/${user}/.local/bin/fabric" "-sp" "system_security_upgrader_$1" >>"$summaryfile"
     echo "Running local ai against the logs of ${tool}... Done"
 }
 function main {
     init "$@"
-    run_ai "lynis" 
-    run_ai "rkhunter" 
+    run_ai "lynis"
+    run_ai "rkhunter"
 
-    
     echo "The summary have been saved at"
     echo "$summaryfile"
     # DEBUG
@@ -92,4 +91,3 @@ function main {
 
 # call main with all args, as given
 main "$@"
-
