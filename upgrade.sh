@@ -23,8 +23,11 @@ function check_args {
     echo
 }
 
+# ---------------------------------------------------------------------------------
+# 1. Initialization
+# ---------------------------------------------------------------------------------
+# initialize the script by getting information and creating dirs for the next steps
 function init {
-    # initialize the script by getting information and creating dirs for the next steps
 
     # checking if the root user is actually running the script
     if [[ "$EUID" -ne 0 || -z "$SUDO_USER" ]]; then
@@ -45,9 +48,6 @@ function init {
         exit 1
     fi
 
-    # init variables
-    declare -g overall_failure=0
-
     # create logfile path pattern
     logpattern=$(date "+%Y-%m-%d_%H-%M-%S")
 
@@ -65,6 +65,11 @@ function init {
 
     echo "Executing upgrade script as root..."
 }
+
+# ---------------------------------------------------------------------------------
+# 2. Command Executor
+# ---------------------------------------------------------------------------------
+# function to run a command with a description, log its output to a logfile, and handle any failures by returning the exit code of the command
 function run_cmd {
     # runs a command, logs its output, and handles any failures
 
@@ -85,6 +90,10 @@ function run_cmd {
     fi
 }
 
+# ---------------------------------------------------------------------------------
+# 3. Failure Evaluator
+# ---------------------------------------------------------------------------------
+# function to evaluate the failure of a command based on its exit code and logfile, and to return a severity level and a reason for the failure
 evaluate_failure() {
     local exit_code="$1"
     local log_file="$2"
@@ -110,20 +119,16 @@ evaluate_failure() {
     fi
 }
 
-function update_mirrorlists {
-    # update the mirrorlists using reflector
-    local REFLECTOR_LOG="${LOGDIR}reflector.log"
-    run_cmd "Updating the mirrorlists" "$REFLECTOR_LOG" 300 reflector --latest 20 --country Germany,Netherlands,Belgium --sort rate --save /etc/pacman.d/mirrorlist
-}
+# ---------------------------------------------------------------------------------
+# 4. State Manager
+# ---------------------------------------------------------------------------------
 
-function upgrade_system {
-    # upgrade the system
-    local pacman_logfile="${LOGDIR}pacman.log"
-    run_cmd "Upgrading the system" "$pacman_logfile" pacman -Syu --noconfirm
-}
+# ---------------------------------------------------------------------------------
+# 5. Orchestration
+# ---------------------------------------------------------------------------------
 
+# function to end the script by asking the user wether to reboot, and creating a trigger file for phase 2
 function end_script {
-    # end the script by asking the user wether to reboot, and creating a trigger file for phase 2
     # ask the user if the system should reboot
     while true; do
         read -p "Upgrade successful. Reboot now? (y/n) " answer
@@ -140,6 +145,8 @@ function end_script {
         fi
     done
 }
+
+# main orchestration function, which calls the other functions in the right order and handles their output
 function main {
     # init the script
     init "$@"
