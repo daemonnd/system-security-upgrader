@@ -19,6 +19,7 @@ function set_state_to_default {
 # If the state file does not exist, it sets the state to default values.
 function read_state {
     if [[ ! -f "$STATE_FILE" ]]; then
+        touch "$STATE_FILE"
         set_state_to_default
     fi
 
