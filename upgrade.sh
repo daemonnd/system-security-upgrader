@@ -44,7 +44,7 @@ function init {
         echo "The user ${user@Q} has a home dir."
     else
         echo "The user ${user@Q} does not have a home dir."
-        echo "Please restart the script by substituting the user with 'su <username>' or running $(install.sh) as a valid user with a homedir."
+        echo "Please restart the script by substituting the user with 'su <username>' or running install.sh as a valid user with a homedir."
         exit 1
     fi
 
@@ -55,7 +55,7 @@ function init {
     export STATE_DIR="/var/lib/system-security-upgrader/"
 
     # create logfile path pattern
-    export logpattern=$(date "+%Y-%m-%d_%H-%M-%S")
+    logpattern=$(date "+%Y-%m-%d_%H-%M-%S")
 
     # create logdir path
     export LOG_DIR="/var/log/system-security-upgrader/${logpattern}_upgrade/"
