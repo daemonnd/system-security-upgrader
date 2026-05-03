@@ -24,9 +24,6 @@ trap 'echo "Error on line $LINENO in read-state.sh: command \"$BASH_COMMAND\" ex
 # trap signals
 trap 'cleanup' INT TERM ERR
 
-# define constants
-readonly STATE_FILE="/var/lib/system-security-upgrader/user-maintenance.state"
-
 function check_args {
     :
 }
@@ -37,11 +34,14 @@ function init {
     state=""
     state_reason=""
     is_invalid=0
+    local state_file_name="${1:-}"
+    readonly STATE_FILE=/var/lib/system-security-upgrader/"$state_file_name"
+    echo "DEBUG: State file: $STATE_FILE"
 }
 
 function read_state_file {
-    if ! cat /var/lib/system-security-upgrader/user-maintenance.state; then
-        echo "ERROR: Could not read state file /var/lib/system-security-upgrader/user-maintenance.state"
+    if ! cat "$STATE_FILE"; then
+        echo "ERROR: Could not read state file $STATE_FILE"
     fi
 }
 
