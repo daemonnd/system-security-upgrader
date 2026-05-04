@@ -50,7 +50,7 @@ ConditionPathExists=/var/lib/system-security-upgrader/pending-ai-summary
 
 [Service]
 Type=oneshot
-ExecStart=/usr/local/bin/security_upgrader_ai-summarizer
+ExecStart=/usr/local/bin/ai-summarizer
 ExecStartPost=+/usr/bin/rm -f /var/lib/system-security-upgrader/pending-ai-summary
 User=${user}
 Group=${user}
@@ -60,6 +60,46 @@ WantedBy=multi-user.target
 EOF
     # reload systemctl
     systemctl daemon-reload
+}
+
+# validate the installation by checking if the files are in place and the services are enabled
+function post_install {
+    if [[ ! $(which upgrade) == "/usr/local/sbin/upgrade" ]]; then
+        echo "Error: upgrade script is not in place."
+        exit 1
+    fi
+    if [[ ! $(which security-check) == "/usr/local/sbin/security-check" ]]; then
+        echo "Error: security-check script is not in place."
+        exit 1
+    fi
+    if [[ ! $(which user-upgrade) == "/usr/local/sbin/user-upgrade" ]]; then
+        echo "Error: user-upgrade script is not in place."
+        exit 1
+    fi
+    if [[ ! $(which ai-summarizer) == "/usr/local/bin/ai-summarizer" ]]; then
+        echo "Error: ai-summarizer script is not in place."
+        exit 1
+    fi
+    if [[ ! $(which state-manager) == "/usr/local/lib/system-security-upgrader/state-manager" ]]; then
+        echo "Error: state-manager script is not in place."
+        exit 1
+    fi
+    if [[ ! $(which failure-evaluator) == "/usr/local/lib/system-security-upgrader/failure-evaluator" ]]; then
+        echo "Error: failure-evaluator script is not in place."
+        exit 1
+    fi
+    if [[ ! $(which read-state) == "/usr/local/lib/system-security-upgrader/read-state" ]]; then
+        echo "Error: read-state script is not in place."
+        exit 1
+    fi
+    if [[ ! $(systemctl is-enabled security-upgrader.service) == "enabled" ]]; then
+        echo "Error: security-upgrader.service is not enabled."
+        exit 1
+    fi
+    if [[ ! $(systemctl is-enabled security-summarizer.service) == "enabled" ]]; then
+        echo "Error: security-summarizer.service is not enabled."
+        exit 1
+    fi
 }
 function main {
     init "$@"
