@@ -39,7 +39,7 @@ function init {
 function main {
     check_args "$@"
     init "$@"
-    /usr/local/sbin/user-upgrade
+    /usr/local/lib/system-security-upgrader/user-maintenance
     /usr/local/lib/system-security-upgrader/read-state "user-maintenance.state"
 }
 

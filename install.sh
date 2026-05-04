@@ -76,19 +76,23 @@ function post_install {
         echo "Error: user-upgrade script is not in place."
         exit 1
     fi
-    if [[ ! $(which ai-summarizer) == "/usr/local/bin/ai-summarizer" ]]; then
+    if [[ ! -f "/usr/local/lib/system-security-upgrader/ai-summarizer" ]]; then
         echo "Error: ai-summarizer script is not in place."
         exit 1
     fi
-    if [[ ! $(which state-manager) == "/usr/local/lib/system-security-upgrader/state-manager" ]]; then
+    if [[ ! -f "/usr/local/lib/system-security-upgrader/user-maintenance" ]]; then
+        echo "Error: user-maintenance script is not in place."
+        exit 1
+    fi
+    if [[ ! -f "/usr/local/lib/system-security-upgrader/state-manager" ]]; then
         echo "Error: state-manager script is not in place."
         exit 1
     fi
-    if [[ ! $(which failure-evaluator) == "/usr/local/lib/system-security-upgrader/failure-evaluator" ]]; then
+    if [[ ! -f "/usr/local/lib/system-security-upgrader/failure-evaluator" ]]; then
         echo "Error: failure-evaluator script is not in place."
         exit 1
     fi
-    if [[ ! $(which read-state) == "/usr/local/lib/system-security-upgrader/read-state" ]]; then
+    if [[ ! -f "/usr/local/lib/system-security-upgrader/read-state" ]]; then
         echo "Error: read-state script is not in place."
         exit 1
     fi
@@ -127,11 +131,12 @@ function main {
     # copy scripts
     cp upgrade.sh /usr/local/sbin/upgrade
     cp security-check.sh /usr/local/sbin/security-check
-    cp ./user-maintenance.sh /usr/local/sbin/user-upgrade
+    cp ./run-full-user-maintenance.sh /usr/local/sbin/user-upgrade
 
     cp ./failure-evaluator.sh /usr/local/lib/system-security-upgrader/failure-evaluator
+    cp ./user-maintenance.sh /usr/local/lib/system-security-upgrader/user-maintenance
     cp ./state-manager.sh /usr/local/lib/system-security-upgrader/state-manager
-    cp ./ai-summarizer.sh /usr/local/lib/ai-summarizer
+    cp ./ai-summarizer.sh /usr/local/lib/system-security-upgrader/ai-summarizer
     cp ./read-state.sh /usr/local/lib/system-security-upgrader/read-state
     # change owner to root for the scripts
     chown root:root /usr/local/sbin/upgrade
@@ -140,7 +145,7 @@ function main {
 
     chown root:root /usr/local/lib/system-security-upgrader/failure-evaluator
     chown root:root /usr/local/lib/system-security-upgrader/state-manager
-    chown "$user":"$user" /usr/local/lib/ai-summarizer
+    chown "$user":"$user" /usr/local/lib/system-security-upgrader/ai-summarizer
     chown root:root /usr/local/lib/system-security-upgrader/read-state
 
     # set permissions
@@ -150,7 +155,7 @@ function main {
 
     chmod 750 /usr/local/lib/system-security-upgrader/failure-evaluator
     chmod 750 /usr/local/lib/system-security-upgrader/state-manager
-    chmod 750 /usr/local/lib/ai-summarizer
+    chmod 750 /usr/local/lib/system-security-upgrader/ai-summarizer
     chmod 750 /usr/local/lib/system-security-upgrader/read-state
     # set up daemon
     cp security-upgrader.service /etc/systemd/system/security-upgrader.service
@@ -170,6 +175,9 @@ function main {
 
     # cp patterns to fabric
     cp -r -- "/home/${user}/.config/system-security-upgrader/system_prompts/." /home/${user}/.config/fabric/patterns/
+
+    # check if the installation went successfull
+    post_install
 
     echo "System security upgrader has been installed successfully!"
 }
