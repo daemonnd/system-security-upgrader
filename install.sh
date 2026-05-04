@@ -73,12 +73,22 @@ function main {
     ai_summarizer_unit
     #check_args "$@" # not needed, because of $SUDO_USER
 
+    # create necessary directories
+    mkdir -p /usr/local/lib/system-security-upgrader
+    mkdir -p /var/lib/system-security-upgrader
+    mkdir -p /var/log/system-security-upgrader
+    chown root:root /usr/local/lib/system-security-upgrader
+    chown root:root /var/lib/system-security-upgrader
+    chown root:root /var/log/system-security-upgrader
+    chmod 755 /usr/local/lib/system-security-upgrader
+    chmod 755 /var/lib/system-security-upgrader
+    chmod 755 /var/log/system-security-upgrader
+
     # copy scripts
     cp upgrade.sh /usr/local/sbin/upgrade
     cp security-check.sh /usr/local/sbin/security-check
     cp ./user-maintenance.sh /usr/local/sbin/user-upgrade
 
-    mkdir -p /usr/local/lib/system-security-upgrader
     cp ./failure-evaluator.sh /usr/local/lib/system-security-upgrader/failure-evaluator
     cp ./state-manager.sh /usr/local/lib/system-security-upgrader/state-manager
     cp ./ai-summarizer.sh /usr/local/lib/ai-summarizer
