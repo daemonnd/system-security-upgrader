@@ -76,15 +76,32 @@ function main {
     # copy scripts
     cp upgrade.sh /usr/local/sbin/upgrade
     cp security-check.sh /usr/local/sbin/security-check
-    cp ai-summarizer.sh /usr/local/bin/security_upgrader_ai-summarizer
+    cp ./user-maintenance.sh /usr/local/sbin/user-upgrade
 
-    # set permissions
-    chmod +x /usr/local/sbin/upgrade
-    chmod +x /usr/local/sbin/security-check
+    mkdir -p /usr/local/lib/system-security-upgrader
+    cp ./failure-evaluator.sh /usr/local/lib/system-security-upgrader/failure-evaluator
+    cp ./state-manager.sh /usr/local/lib/system-security-upgrader/state-manager
+    cp ./ai-summarizer.sh /usr/local/lib/ai-summarizer
+    cp ./read-state.sh /usr/local/lib/system-security-upgrader/read-state
     # change owner to root for the scripts
     chown root:root /usr/local/sbin/upgrade
     chown root:root /usr/local/sbin/security-check
+    chown root:root /usr/local/sbin/user-upgrade
 
+    chown root:root /usr/local/lib/system-security-upgrader/failure-evaluator
+    chown root:root /usr/local/lib/system-security-upgrader/state-manager
+    chown "$user":"$user" /usr/local/lib/ai-summarizer
+    chown root:root /usr/local/lib/system-security-upgrader/read-state
+
+    # set permissions
+    chmod 750 /usr/local/sbin/upgrade
+    chmod 750 /usr/local/sbin/security-check
+    chmod 750 /usr/local/sbin/user-upgrade
+
+    chmod 750 /usr/local/lib/system-security-upgrader/failure-evaluator
+    chmod 750 /usr/local/lib/system-security-upgrader/state-manager
+    chmod 750 /usr/local/lib/ai-summarizer
+    chmod 750 /usr/local/lib/system-security-upgrader/read-state
     # set up daemon
     cp security-upgrader.service /etc/systemd/system/security-upgrader.service
 
