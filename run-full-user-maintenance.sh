@@ -11,7 +11,7 @@ function rm_tmp_files {
 # Cleanup function
 function cleanup {
     local exit_code="$?"
-    echo "Script <script name> interrupted or failed. Cleaning up..."
+    echo "Script run-full-user-maintenance.sh interrupted or failed. Cleaning up..."
 
     # remove tmp files
     rm_tmp_files
@@ -20,7 +20,7 @@ function cleanup {
 }
 
 # trap errors
-trap 'echo "Error on line $LINENO in <script name>: command \"$BASH_COMMAND\" exited with status $?" >&2' ERR
+trap 'echo "Error on line $LINENO in run-full-user-maintenance.sh: command \"$BASH_COMMAND\" exited with status $?" >&2' ERR
 # trap signals
 trap 'cleanup' INT TERM ERR
 
@@ -39,8 +39,8 @@ function init {
 function main {
     check_args "$@"
     init "$@"
-    ./user-maintenance.sh
-    ./read-state.sh
+    /usr/local/sbin/user-upgrade
+    /usr/local/lib/system-security-upgrader/read-state "user-maintenance.state"
 }
 
 # call main with all args, as given
