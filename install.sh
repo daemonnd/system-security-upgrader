@@ -58,8 +58,29 @@ Group=${user}
 [Install]
 WantedBy=multi-user.target
 EOF
-    # reload systemctl
-    systemctl daemon-reload
+}
+
+function security_upgrader_unit {
+    # create the unit
+    cat <<EOF >/etc/systemd/system/security-upgrader.service
+[Unit]
+Description=Run post-upgrade security checks
+After=network-online.target
+Wants=network-online.target
+ConditionPathExists=/var/lib/system-security-upgrader/pending-check
+
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/security-check
+ExecStartPost=/usr/local/lib/system-security-upgrader/read-state security-check.state
+User=root
+Group=root
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
+EOF
 }
 
 # validate the installation by checking if the files are in place and the services are enabled
@@ -114,8 +135,10 @@ function main {
         echo "Installing system security upgrader from github for user $user..."
         clone
     fi
+    security_upgrader_unit
     ai_summarizer_unit
-    #check_args "$@" # not needed, because of $SUDO_USER
+    # reload systemctl
+    systemctl daemon-reload
 
     # create necessary directories
     mkdir -p /usr/local/lib/system-security-upgrader
