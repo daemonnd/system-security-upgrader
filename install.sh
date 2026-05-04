@@ -7,12 +7,22 @@ set -euo pipefail
 trap 'echo "Error on line $LINENO: command \"$BASH_COMMAND\" exited with status $?" >&2' ERR
 
 function check_args {
-    echo "${1:?ERROR: A valid username with home dir has to be given as first argument}"
+    : "${1:?ERROR: A valid username with home dir has to be given as first argument}"
     if [[ -d "/home/$1" ]]; then
         echo "$1 is a valid username with home dir."
         user="$1"
     else
-        echo "Please enter a valid username with home dir."
+        echo "Please enter a valid username with home dir as first argument. $1 does not have a home directory in /home."
+        exit 1
+    fi
+    # if the user wants to install locally
+    install_locally=0
+    if [[ -z "${2-}" ]]; then
+        :
+    elif [[ "$2" == "local" ]]; then
+        install_locally=1
+    else
+        echo "Invalid second argument: ${2@Q}. Only local is accepted as second argument."
         exit 1
     fi
 }
@@ -53,7 +63,13 @@ EOF
 }
 function main {
     init "$@"
-    clone
+    check_args "$@"
+    if [[ "$install_locally" -eq 1 ]]; then
+        echo "Installing system security upgrader from current directory for user $user..."
+    else
+        echo "Installing system security upgrader from github for user $user..."
+        clone
+    fi
     ai_summarizer_unit
     #check_args "$@" # not needed, because of $SUDO_USER
 
