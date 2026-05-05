@@ -49,9 +49,9 @@ function init {
 
     # source files
     # state manager
-    source ./state-manager.sh
+    source /usr/local/lib/system-security-upgrader/state-manager
     # failure evaluator
-    source ./failure-evaluator.sh
+    source /usr/local/lib/system-security-upgrader/failure-evaluator
     # create logfile path pattern
 
     # create logdir path

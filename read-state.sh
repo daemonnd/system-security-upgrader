@@ -241,7 +241,7 @@ function output_results {
 
 function main {
     echo "########################################"
-    echo "######## User Maintenance State ########"
+    echo "######## ${1:-} ########"
     echo "########################################"
     echo
     check_args "$@"
