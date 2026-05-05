@@ -135,6 +135,10 @@ function post_install {
         echo "ERROR: read-state script is not in place."
         exit 1
     fi
+    if [[ ! -f "/usr/local/lib/system-security-upgrader/state-lib" ]]; then
+        echo "ERROR: state-lib script is not in place."
+        exit 1
+    fi
     if [[ ! $(systemctl is-enabled security-upgrader.service) == "enabled" ]]; then
         echo "ERROR: security-upgrader.service is not enabled."
         exit 1
@@ -180,6 +184,7 @@ function main {
     cp ./state-manager.sh /usr/local/lib/system-security-upgrader/state-manager
     cp ./ai-summarizer.sh /usr/local/lib/system-security-upgrader/ai-summarizer
     cp ./read-state.sh /usr/local/lib/system-security-upgrader/read-state
+    cp ./state-lib.sh /usr/local/lib/system-security-upgrader/state-lib
     # change owner to root for the scripts
     chown root:root /usr/local/sbin/security-check
     chown root:root /usr/local/sbin/user-upgrade
@@ -189,6 +194,7 @@ function main {
     chown root:root /usr/local/lib/system-security-upgrader/state-manager
     chown "$user":"$user" /usr/local/lib/system-security-upgrader/ai-summarizer
     chown root:root /usr/local/lib/system-security-upgrader/read-state
+    chown root:root /usr/local/lib/system-security-upgrader/state-lib
 
     # set permissions
     chmod 750 /usr/local/sbin/security-check
@@ -199,6 +205,7 @@ function main {
     chmod 750 /usr/local/lib/system-security-upgrader/state-manager
     chmod 750 /usr/local/lib/system-security-upgrader/ai-summarizer
     chmod 750 /usr/local/lib/system-security-upgrader/read-state
+    chmod 750 /usr/local/lib/system-security-upgrader/state-lib
     # set up daemon
 
     # reload daemons
