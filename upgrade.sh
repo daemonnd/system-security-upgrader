@@ -30,14 +30,24 @@ function check_args {
 function init {
 
     # checking if the root user is actually running the script
-    if [[ "$EUID" -ne 0 || -z "$SUDO_USER" ]]; then
+    if [[ "$EUID" -ne 0 ]]; then
         echo "Permission Error: This script needs root privileges or sudo." # logging does not work at this point
         exit 1
     fi
 
     # get the user that should own the ai summary
     # getting the user who executed the script
-    user="$SUDO_USER"
+    user="${1:?ERROR: The first arg has to be the username of the regular user}"
+    echo "DEBUG: user home directory:"
+    if ! getent passwd "$user" | awk -F ':' ' { print $6 } '; then
+        echo "ERROR: It seems that the user $user does not have a home dir."
+        exit 1
+    fi
+    reboot="${2:?ERROR: second arg must be 0 or 1}"
+    if [[ -z "$reboot" || ("$reboot" != "0" && "$reboot" != "1") ]]; then
+        echo "ERROR: second arg for reboot or not is not 0 or 1, it is $reboot"
+        exit 1
+    fi
     # check if the user have a home dir for config
     home_dir=$(getent passwd "$user" | awk -F ':' ' { print $6 } ')
     if [[ -d "$home_dir" ]]; then
@@ -106,20 +116,17 @@ function run_cmd {
 
 # function to end the script by asking the user wether to reboot, and creating a trigger file for phase 2
 function end_script {
-    # ask the user if the system should reboot
-    while true; do
-        read -p "Upgrade successful. Reboot now? (y/n) " answer
-        if [[ "${answer,}" == "y" ]]; then
-            echo "$user" >/var/lib/system-security-upgrader/pending-check # touch file so that the service knows when to run
-            reboot
-        elif [[ "${answer,}" == "n" ]]; then
-            echo "$user" >/var/lib/system-security-upgrader/pending-check # create the file with the user in it so that the service knows when to run and knows the right user
-            echo "After the next reboot, the security of the system will be checked."
-            exit 0
-        else
-            echo "Please enter valid input. Possible options: 'y' for yes (reboot now) and 'n' for no (do not reboot now)."
-        fi
-    done
+    if [[ "$reboot" -eq 1 ]]; then
+        echo "rebooting..."
+        echo "$user" >/var/lib/system-security-upgrader/pending-check # touch file so that the service knows when to run
+        reboot
+    elif [[ "$reboot" -eq 0 ]]; then
+        echo "$user" >/var/lib/system-security-upgrader/pending-check # create the file with the user in it so that the service knows when to run and knows the right user
+        echo "After the next reboot, the security of the system will be checked."
+        exit 0
+    else
+        echo "Invalid second arg for determining if the system should reboot: $reboot"
+    fi
 }
 
 # main orchestration function, which calls the other functions in the right order and handles their output
