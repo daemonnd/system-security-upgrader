@@ -4,7 +4,7 @@
 set -euo pipefail
 
 # trap errors
-trap 'echo "Error on line $LINENO: command \"$BASH_COMMAND\" exited with status $?" >&2' ERR
+trap 'echo "ERROR on line $LINENO: command \"$BASH_COMMAND\" exited with status $?" >&2' ERR
 
 function check_args {
     : "${1:?ERROR: A valid username with home dir has to be given as first argument}"
@@ -30,7 +30,7 @@ function check_args {
 function init {
     # checking if the root user is actually running the script
     if [[ "$EUID" -ne 0 ]]; then
-        echo "Permission Error: This script needs root privileges or sudo."
+        echo "Permission ERROR: This script needs root privileges or sudo."
         exit 1
     fi
     # get the user
@@ -38,6 +38,23 @@ function init {
 }
 function clone {
     git clone https://github.com/daemonnd/system-security-upgrader.git && cd system-security-upgrader
+}
+function sys_upgrade_unit {
+    cat <<EOF >/etc/systemd/system/sys-upgrade.service
+[Unit]
+Description=Upgrade the system
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/lib/system-security-upgrader/upgrade ${user} 1
+User=root
+Group=root
+
+[Install]
+WantedBy=multi-user.target
+EOF
 }
 function ai_summarizer_unit {
     # create the unit
@@ -72,6 +89,7 @@ ConditionPathExists=/var/lib/system-security-upgrader/pending-check
 
 [Service]
 Type=oneshot
+ExecStartPre=/usr/local/lib/system-security-upgrader/read-state sys-upgrade.state
 ExecStart=/usr/local/sbin/security-check
 ExecStartPost=/usr/local/lib/system-security-upgrader/read-state security-check.state
 User=root
@@ -85,44 +103,44 @@ EOF
 
 # validate the installation by checking if the files are in place and the services are enabled
 function post_install {
-    if [[ ! $(which upgrade) == "/usr/local/sbin/upgrade" ]]; then
-        echo "Error: upgrade script is not in place."
-        exit 1
-    fi
     if [[ ! $(which security-check) == "/usr/local/sbin/security-check" ]]; then
-        echo "Error: security-check script is not in place."
+        echo "ERROR: security-check script is not in place."
         exit 1
     fi
     if [[ ! $(which user-upgrade) == "/usr/local/sbin/user-upgrade" ]]; then
-        echo "Error: user-upgrade script is not in place."
+        echo "ERROR: user-upgrade script is not in place."
+        exit 1
+    fi
+    if [[ ! -f "/usr/local/lib/system-security-upgrader/upgrade" ]]; then
+        echo "ERROR: upgrade script is not in place."
         exit 1
     fi
     if [[ ! -f "/usr/local/lib/system-security-upgrader/ai-summarizer" ]]; then
-        echo "Error: ai-summarizer script is not in place."
+        echo "ERROR: ai-summarizer script is not in place."
         exit 1
     fi
     if [[ ! -f "/usr/local/lib/system-security-upgrader/user-maintenance" ]]; then
-        echo "Error: user-maintenance script is not in place."
+        echo "ERROR: user-maintenance script is not in place."
         exit 1
     fi
     if [[ ! -f "/usr/local/lib/system-security-upgrader/state-manager" ]]; then
-        echo "Error: state-manager script is not in place."
+        echo "ERROR: state-manager script is not in place."
         exit 1
     fi
     if [[ ! -f "/usr/local/lib/system-security-upgrader/failure-evaluator" ]]; then
-        echo "Error: failure-evaluator script is not in place."
+        echo "ERROR: failure-evaluator script is not in place."
         exit 1
     fi
     if [[ ! -f "/usr/local/lib/system-security-upgrader/read-state" ]]; then
-        echo "Error: read-state script is not in place."
+        echo "ERROR: read-state script is not in place."
         exit 1
     fi
     if [[ ! $(systemctl is-enabled security-upgrader.service) == "enabled" ]]; then
-        echo "Error: security-upgrader.service is not enabled."
+        echo "ERROR: security-upgrader.service is not enabled."
         exit 1
     fi
     if [[ ! $(systemctl is-enabled security-summarizer.service) == "enabled" ]]; then
-        echo "Error: security-summarizer.service is not enabled."
+        echo "ERROR: security-summarizer.service is not enabled."
         exit 1
     fi
 }
@@ -135,6 +153,7 @@ function main {
         echo "Installing system security upgrader from github for user $user..."
         clone
     fi
+    sys_upgrade_unit
     security_upgrader_unit
     ai_summarizer_unit
     # reload systemctl
@@ -152,36 +171,35 @@ function main {
     chmod 755 /var/log/system-security-upgrader
 
     # copy scripts
-    cp upgrade.sh /usr/local/sbin/upgrade
     cp security-check.sh /usr/local/sbin/security-check
     cp ./run-full-user-maintenance.sh /usr/local/sbin/user-upgrade
 
+    cp ./upgrade.sh /usr/local/lib/system-security-upgrader/upgrade
     cp ./failure-evaluator.sh /usr/local/lib/system-security-upgrader/failure-evaluator
     cp ./user-maintenance.sh /usr/local/lib/system-security-upgrader/user-maintenance
     cp ./state-manager.sh /usr/local/lib/system-security-upgrader/state-manager
     cp ./ai-summarizer.sh /usr/local/lib/system-security-upgrader/ai-summarizer
     cp ./read-state.sh /usr/local/lib/system-security-upgrader/read-state
     # change owner to root for the scripts
-    chown root:root /usr/local/sbin/upgrade
     chown root:root /usr/local/sbin/security-check
     chown root:root /usr/local/sbin/user-upgrade
 
+    chown root:root /usr/local/lib/system-security-upgrader/upgrade
     chown root:root /usr/local/lib/system-security-upgrader/failure-evaluator
     chown root:root /usr/local/lib/system-security-upgrader/state-manager
     chown "$user":"$user" /usr/local/lib/system-security-upgrader/ai-summarizer
     chown root:root /usr/local/lib/system-security-upgrader/read-state
 
     # set permissions
-    chmod 750 /usr/local/sbin/upgrade
     chmod 750 /usr/local/sbin/security-check
     chmod 750 /usr/local/sbin/user-upgrade
 
+    chmod 750 /usr/local/lib/system-security-upgrader/upgrade
     chmod 750 /usr/local/lib/system-security-upgrader/failure-evaluator
     chmod 750 /usr/local/lib/system-security-upgrader/state-manager
     chmod 750 /usr/local/lib/system-security-upgrader/ai-summarizer
     chmod 750 /usr/local/lib/system-security-upgrader/read-state
     # set up daemon
-    cp security-upgrader.service /etc/systemd/system/security-upgrader.service
 
     # reload daemons
     systemctl daemon-reload
