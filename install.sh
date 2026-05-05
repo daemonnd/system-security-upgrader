@@ -48,7 +48,7 @@ Wants=network-online.target
 
 [Service]
 Type=oneshot
-ExecStart=/usr/local/lib/system-security-upgrader/upgrade ${user} 1
+ExecStart=/usr/local/lib/system-security-upgrader/upgrade ${user} 0
 User=root
 Group=root
 
@@ -67,7 +67,7 @@ ConditionPathExists=/var/lib/system-security-upgrader/pending-ai-summary
 
 [Service]
 Type=oneshot
-ExecStart=/usr/local/bin/ai-summarizer
+ExecStart=/usr/local/lib/system-security-upgrader/ai-summarizer
 ExecStartPost=+/usr/bin/rm -f /var/lib/system-security-upgrader/pending-ai-summary
 User=${user}
 Group=${user}
