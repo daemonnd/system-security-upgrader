@@ -149,7 +149,7 @@ function build-ai-summary {
 function main {
     check_args "$@"
     init "$@"
-    rm /var/lib/system-security-upgrader/dashboard
+    rm /var/lib/system-security-upgrader/dashboard.md
     local temp_file="/var/lib/system-security-upgrader/dashboard.tmp.$$"
 
     touch /var/lib/system-security-upgrader/dashboard
@@ -161,7 +161,7 @@ function main {
         build-ai-summary
     } >"$temp_file"
 
-    if ! mv "$temp_file" "/var/lib/system-security-upgrader/dashboard"; then
+    if ! mv "$temp_file" "/var/lib/system-security-upgrader/dashboard.md"; then
         rm -f "$temp_file"
         echo "FATAL: Failed to write dashboard file, the dashboard won't be updated." >&2
         exit 1
