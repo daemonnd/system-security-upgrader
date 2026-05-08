@@ -89,9 +89,9 @@ ConditionPathExists=/var/lib/system-security-upgrader/pending-check
 
 [Service]
 Type=oneshot
-ExecStartPre=/usr/local/lib/system-security-upgrader/read-state sys-upgrade.state
+ExecStartPre=/usr/local/lib/system-security-upgrader/dashboard-builder ${user}
 ExecStart=/usr/local/sbin/security-check
-ExecStartPost=/usr/local/lib/system-security-upgrader/read-state security-check.state
+ExecStartPost=/usr/local/lib/system-security-upgrader/dashboard-builder ${user}
 User=root
 Group=root
 PrivateTmp=true
