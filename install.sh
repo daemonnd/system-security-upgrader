@@ -77,6 +77,18 @@ WantedBy=multi-user.target
 EOF
 }
 
+function sys_upgrade_timer {
+    cat <<EOF >/etc/systemd/system/sys-upgrade.timer
+[Unit]
+Description=Timer for upgrading the system daily
+[Timer]
+OnCalendar=*-*-* 18:08:40
+Unit=sys-upgrade.service
+Persistent=true
+[Install]
+WantedBy=timers.target
+EOF
+}
 function security_upgrader_unit {
     # create the unit
     cat <<EOF >/etc/systemd/system/security-upgrader.service
@@ -162,10 +174,9 @@ function main {
         clone
     fi
     sys_upgrade_unit
+    sys_upgrade_timer
     security_upgrader_unit
     ai_summarizer_unit
-    # reload systemctl
-    systemctl daemon-reload
 
     # create necessary directories
     mkdir -p /usr/local/lib/system-security-upgrader
@@ -215,12 +226,13 @@ function main {
     chmod 750 /usr/local/lib/system-security-upgrader/dashboard-builder
     # set up daemon
 
-    # reload daemons
-    systemctl daemon-reload
-
     # enable services
+    systemctl enable --now sys-upgrade.timer
     systemctl enable security-upgrader.service
     systemctl enable security-summarizer.service
+
+    # reload daemons
+    systemctl daemon-reload
 
     # create .config dir & copy system prompts in there for fabric
     mkdir -p "/home/${user}/.config/system-security-upgrader/system_prompts"
