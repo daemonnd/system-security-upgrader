@@ -66,16 +66,27 @@ function filter {
     echo "filterning ${logfile}... Done"
 }
 function run_ai {
+    local temp_file="${summaryfile}.tmp.$$"
     # tool: $1
     local tool="$1"
     echo "Running local ai against the logs of ${tool}..."
 
-    echo >>"$summaryfile"
-    echo "# $tool" >>"$summaryfile"
-    echo >>"$summaryfile"
+    echo >>"$temp_file"
+    echo "# $tool" >>"$temp_file"
+    echo >>"$temp_file"
 
-    filter "${logdir}${tool}.log" | "/home/${user}/.local/bin/fabric" "-sp" "system_security_upgrader_$1" >>"$summaryfile"
+    filter "${logdir}${tool}.log" | "/home/${user}/.local/bin/fabric" "-sp" "system_security_upgrader_$1" >>"$temp_file"
     echo "Running local ai against the logs of ${tool}... Done"
+
+    # write atomically to the summary file
+    if ! mv "$temp_file" "$summaryfile"; then
+        rm -f "$temp_file"
+        echo "FATAL: Failed to write state file, this run is silent and did not updated the ai summary file" >&2
+        exit 1
+    else
+        rm -f "$temp_file"
+    fi
+
 }
 function main {
     init "$@"
@@ -84,9 +95,6 @@ function main {
 
     echo "The summary have been saved at"
     echo "$summaryfile"
-    # DEBUG
-    echo "USER: $user"
-
 }
 
 # call main with all args, as given
