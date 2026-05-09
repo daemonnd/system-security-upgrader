@@ -71,9 +71,11 @@ function run_ai {
     local tool="$1"
     echo "Running local ai against the logs of ${tool}..."
 
-    echo >>"$temp_file"
-    echo "# $tool" >>"$temp_file"
-    echo >>"$temp_file"
+    {
+        echo
+        echo "# $tool"
+        echo
+    } >>"$temp_file"
 
     filter "${logdir}${tool}.log" | "/home/${user}/.local/bin/fabric" "-sp" "system_security_upgrader_$1" >>"$temp_file"
     echo "Running local ai against the logs of ${tool}... Done"
