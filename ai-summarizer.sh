@@ -79,12 +79,10 @@ function run_ai {
     echo "Running local ai against the logs of ${tool}... Done"
 
     # write atomically to the summary file
+    rm -f "$temp_file"
     if ! mv "$temp_file" "$summaryfile"; then
-        rm -f "$temp_file"
         echo "FATAL: Failed to write state file, this run is silent and did not updated the ai summary file" >&2
         exit 1
-    else
-        rm -f "$temp_file"
     fi
 
 }
