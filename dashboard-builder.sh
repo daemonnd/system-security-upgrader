@@ -35,11 +35,22 @@ function check_args {
 function init {
     date_time_updated=$(date "+%Y-%m-%d %H:%M:%S")
 
-    ai_summary_file=$(find /var/lib/system-security-upgrader/summaries/"$user"/ | sort | tail -1)
-    if [[ "$ai_summary_file" =~ [0-9]{4}-[0-9]{2}-[0-9]{2}_[0-9]{2}-[0-9]{2}-[0-9]{2}_ai-summary\.md ]]; then
+    mapfile -t matching_files < <(find /var/lib/system-security-upgrader/summaries/"$user"/ -name "*_ai-summary.md" | sort -r)
+    ai_summary_file="${matching_files[0]}"
+
+    if [[ -z "$ai_summary_file" ]]; then
+        echo "ERROR: no valid candidate ai summary file found"
+        exit 1
+    fi
+    if [[ ! -f "$ai_summary_file" ]]; then
+        echo "ERROR: $ai_summary_file does not exist"
+        exit 1
+    fi
+
+    if [[ "${ai_summary_file##*/}" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}_[0-9]{2}-[0-9]{2}-[0-9]{2}_ai-summary\.md$ ]]; then
         :
     else
-        echo "ERROR: $ai_summary_file does not start with the pattern for ai summaries."
+        echo "ERROR: Ai summary file $ai_summary_file does not match the ai summay file format"
         exit 1
     fi
 }
@@ -151,9 +162,14 @@ function build-ai-summary {
 }
 
 function main {
+    # =========================
+    # GLOBAL LOCK (DO NOT MOVE)
+    # =========================
+    exec 200>/tmp/dashboard-builder.lock
+    flock -x 200
+    # =========================
     check_args "$@"
     init "$@"
-    rm /var/lib/system-security-upgrader/dashboard.md
     local temp_file="/var/lib/system-security-upgrader/dashboard.tmp.$$"
 
     {

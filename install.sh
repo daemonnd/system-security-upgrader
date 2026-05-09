@@ -82,7 +82,7 @@ function sys_upgrade_timer {
 [Unit]
 Description=Timer for upgrading the system daily
 [Timer]
-OnCalendar=*-*-* 18:08:40
+OnCalendar=*-*-* 08:00:00
 Unit=sys-upgrade.service
 Persistent=true
 [Install]
