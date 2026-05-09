@@ -10,7 +10,7 @@ function init {
     state_reason=""
     is_invalid=0
     local state_file_name="${1:-}"
-    readonly STATE_FILE=/var/lib/system-security-upgrader/"$state_file_name"
+    STATE_FILE=/var/lib/system-security-upgrader/"$state_file_name"
     echo "DEBUG: State file: $STATE_FILE"
 }
 
@@ -39,12 +39,12 @@ function convert_date {
     if [[ -z "$last_attempt" ]]; then
         last_attempt_date="N/A"
     else
-        last_attempt_date=$(date -d "@$last_attempt" '+%Y-%m-%d')
+        last_attempt_date=$(date -d "@$last_attempt" '+%Y-%m-%d_%H:%M:%S')
     fi
     if [[ -z "$last_success" ]]; then
         last_success_date="N/A"
     else
-        last_success_date=$(date -d "@$last_success" '+%Y-%m-%d')
+        last_success_date=$(date -d "@$last_success" '+%Y-%m-%d_%H:%M:%S')
     fi
 }
 
