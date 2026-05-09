@@ -77,6 +77,18 @@ WantedBy=multi-user.target
 EOF
 }
 
+function sys_upgrade_timer {
+    cat <<EOF >/etc/systemd/system/sys-upgrade.timer
+[Unit]
+Description=Timer for upgrading the system daily
+[Timer]
+OnCalendar=*-*-* 18:08:40
+Unit=sys-upgrade.service
+Persistent=true
+[Install]
+WantedBy=timers.target
+EOF
+}
 function security_upgrader_unit {
     # create the unit
     cat <<EOF >/etc/systemd/system/security-upgrader.service
@@ -89,9 +101,9 @@ ConditionPathExists=/var/lib/system-security-upgrader/pending-check
 
 [Service]
 Type=oneshot
-ExecStartPre=/usr/local/lib/system-security-upgrader/read-state sys-upgrade.state
+ExecStartPre=/usr/local/lib/system-security-upgrader/dashboard-builder ${user}
 ExecStart=/usr/local/sbin/security-check
-ExecStartPost=/usr/local/lib/system-security-upgrader/read-state security-check.state
+ExecStartPost=/usr/local/lib/system-security-upgrader/dashboard-builder ${user}
 User=root
 Group=root
 PrivateTmp=true
@@ -135,6 +147,14 @@ function post_install {
         echo "ERROR: read-state script is not in place."
         exit 1
     fi
+    if [[ ! -f "/usr/local/lib/system-security-upgrader/state-lib" ]]; then
+        echo "ERROR: state-lib script is not in place."
+        exit 1
+    fi
+    if [[ ! -f "/usr/local/lib/system-security-upgrader/dashboard-builder" ]]; then
+        echo "ERROR: dashboard-builder script is not in place."
+        exit 1
+    fi
     if [[ ! $(systemctl is-enabled security-upgrader.service) == "enabled" ]]; then
         echo "ERROR: security-upgrader.service is not enabled."
         exit 1
@@ -154,10 +174,9 @@ function main {
         clone
     fi
     sys_upgrade_unit
+    sys_upgrade_timer
     security_upgrader_unit
     ai_summarizer_unit
-    # reload systemctl
-    systemctl daemon-reload
 
     # create necessary directories
     mkdir -p /usr/local/lib/system-security-upgrader
@@ -180,6 +199,8 @@ function main {
     cp ./state-manager.sh /usr/local/lib/system-security-upgrader/state-manager
     cp ./ai-summarizer.sh /usr/local/lib/system-security-upgrader/ai-summarizer
     cp ./read-state.sh /usr/local/lib/system-security-upgrader/read-state
+    cp ./state-lib.sh /usr/local/lib/system-security-upgrader/state-lib
+    cp ./dashboard-builder.sh /usr/local/lib/system-security-upgrader/dashboard-builder
     # change owner to root for the scripts
     chown root:root /usr/local/sbin/security-check
     chown root:root /usr/local/sbin/user-upgrade
@@ -189,6 +210,8 @@ function main {
     chown root:root /usr/local/lib/system-security-upgrader/state-manager
     chown "$user":"$user" /usr/local/lib/system-security-upgrader/ai-summarizer
     chown root:root /usr/local/lib/system-security-upgrader/read-state
+    chown root:root /usr/local/lib/system-security-upgrader/state-lib
+    chown root:root /usr/local/lib/system-security-upgrader/dashboard-builder
 
     # set permissions
     chmod 750 /usr/local/sbin/security-check
@@ -199,14 +222,17 @@ function main {
     chmod 750 /usr/local/lib/system-security-upgrader/state-manager
     chmod 750 /usr/local/lib/system-security-upgrader/ai-summarizer
     chmod 750 /usr/local/lib/system-security-upgrader/read-state
+    chmod 750 /usr/local/lib/system-security-upgrader/state-lib
+    chmod 750 /usr/local/lib/system-security-upgrader/dashboard-builder
     # set up daemon
+
+    # enable services
+    systemctl enable --now sys-upgrade.timer
+    systemctl enable security-upgrader.service
+    systemctl enable security-summarizer.service
 
     # reload daemons
     systemctl daemon-reload
-
-    # enable services
-    systemctl enable security-upgrader.service
-    systemctl enable security-summarizer.service
 
     # create .config dir & copy system prompts in there for fabric
     mkdir -p "/home/${user}/.config/system-security-upgrader/system_prompts"

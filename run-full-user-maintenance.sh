@@ -41,6 +41,7 @@ function main {
     init "$@"
     /usr/local/lib/system-security-upgrader/user-maintenance
     /usr/local/lib/system-security-upgrader/read-state "user-maintenance.state"
+    /usr/local/lib/system-security-upgrader/dashboard-builder "$SUDO_USER"
 }
 
 # call main with all args, as given
