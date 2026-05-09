@@ -33,8 +33,7 @@ function check_args {
 }
 
 function init {
-    date_time_updated=$(date +%Y-%m-%d)
-    date_time_updated="$date_time_updated $(date +%H:%M:%S)"
+    date_time_updated=$(date "+%Y-%m-%d %H:%M:%S")
 
     ai_summary_file=$(find /var/lib/system-security-upgrader/summaries/"$user"/ | sort | tail -1)
     if [[ "$ai_summary_file" =~ [0-9]{4}-[0-9]{2}-[0-9]{2}_[0-9]{2}-[0-9]{2}-[0-9]{2}_ai-summary\.md ]]; then
@@ -93,6 +92,8 @@ function build-sys-upgrade {
     else
         echo "Freshness: FRESH"
     fi
+    last_attempt_date="${last_attempt_date//_/ }"
+    last_success_date="${last_success_date//_/ }"
     echo "State: $state"
     echo "Sate Reason: $state_reason"
     echo "Last Attempt: ${last_attempt_date:-N/A}" # when the last run of user-maintenance was
@@ -112,6 +113,8 @@ function build-user-maintenance {
     else
         echo "Freshness: FRESH"
     fi
+    last_attempt_date="${last_attempt_date//_/ }"
+    last_success_date="${last_success_date//_/ }"
     echo "State: $state"
     echo "Sate Reason: $state_reason"
     echo "Last Attempt: ${last_attempt_date:-N/A}" # when the last run of user-maintenance was
@@ -131,6 +134,8 @@ function build-security-check {
     else
         echo "Freshness: FRESH"
     fi
+    last_attempt_date="${last_attempt_date//_/ }"
+    last_success_date="${last_success_date//_/ }"
     echo "State: $state"
     echo "Sate Reason: $state_reason"
     echo "Last Attempt: ${last_attempt_date:-N/A}" # when the last run of user-maintenance was
@@ -141,8 +146,7 @@ function build-security-check {
 
 function build-ai-summary {
     ai_summary_date="${ai_summary_file##*/}"
-    ai_summary_date="${ai_summary_date%_*}"
-    echo "AI security summary from $ai_summary_date:"
+    echo "AI security summary from ${ai_summary_date//_/ }:"
     cat "$ai_summary_file"
 }
 
@@ -152,7 +156,6 @@ function main {
     rm /var/lib/system-security-upgrader/dashboard.md
     local temp_file="/var/lib/system-security-upgrader/dashboard.tmp.$$"
 
-    touch /var/lib/system-security-upgrader/dashboard
     {
         echo "Dashboard last updated at: $date_time_updated"
         build-sys-upgrade
@@ -165,6 +168,8 @@ function main {
         rm -f "$temp_file"
         echo "FATAL: Failed to write dashboard file, the dashboard won't be updated." >&2
         exit 1
+    else
+        rm -f "$temp_file"
     fi
 }
 
