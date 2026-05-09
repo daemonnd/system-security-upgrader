@@ -151,9 +151,14 @@ function build-ai-summary {
 }
 
 function main {
+    # =========================
+    # GLOBAL LOCK (DO NOT MOVE)
+    # =========================
+    exec 200>/tmp/dashboard-builder.lock
+    flock -x 200
+    # =========================
     check_args "$@"
     init "$@"
-    rm /var/lib/system-security-upgrader/dashboard.md
     local temp_file="/var/lib/system-security-upgrader/dashboard.tmp.$$"
 
     {
