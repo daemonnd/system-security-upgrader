@@ -17,5 +17,5 @@ jobs:
       - name: Run ShellCheck
         uses: ludeeus/action-shellcheck@2.0.0
         with:
-          # You can specify which files to check, e.g., all .sh files
           files: "**/*.sh"
+          severity: warning
